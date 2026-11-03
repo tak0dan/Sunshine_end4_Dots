@@ -3937,6 +3937,22 @@ index 00000000..2fb65d43
 +        return px[keep][:, :3], rows[keep]
 +    rows = np.repeat(np.linspace(0, 1, img.height), img.width)   # 0 = top of the screen
 +    return np.asarray(img.convert("RGB"), dtype=float).reshape(-1, 3) / 255, rows
+diff --git a/dots/.config/quickshell/ii/modules/ii/bar/HyprlandXkbIndicator.qml b/dots/.config/quickshell/ii/modules/ii/bar/HyprlandXkbIndicator.qml
+old mode 100644
+new mode 100755
+index a6ca214a..25636a4c
+--- a/dots/.config/quickshell/ii/modules/ii/bar/HyprlandXkbIndicator.qml
++++ b/dots/.config/quickshell/ii/modules/ii/bar/HyprlandXkbIndicator.qml
+@@ -28,7 +28,8 @@ Loader {
+             text: abbreviateLayoutCode(HyprlandXkb.currentLayoutCode)
+             font.pixelSize: text.includes("\n") ? Appearance.font.pixelSize.smallie : Appearance.font.pixelSize.small
+             color: root.color
+-            animateChange: true
++            // No slide/fade: a layout indicator has to follow the keypress at once
++            animateChange: false
+         }
+     }
+ }
 diff --git a/dots/.config/quickshell/ii/scripts/colors/terminal/sequences.txt b/dots/.config/quickshell/ii/scripts/colors/terminal/sequences.txt
 index a677181e..9e38d5d1 100644
 --- a/dots/.config/quickshell/ii/scripts/colors/terminal/sequences.txt
@@ -3946,6 +3962,186 @@ index a677181e..9e38d5d1 100644
 \ No newline at end of file
 +]4;0;#$term0 #\]1;0;#$term0 #\]4;1;#$term1 #\]4;2;#$term2 #\]4;3;#$term3 #\]4;4;#$term4 #\]4;5;#$term5 #\]4;6;#$term6 #\]4;7;#$term7 #\]4;8;#$term8 #\]4;9;#$term9 #\]4;10;#$term10 #\]4;11;#$term11 #\]4;12;#$term12 #\]4;13;#$term13 #\]4;14;#$term14 #\]4;15;#$term15 #\]4;232;#$term7 #\]4;255;#$primary #\]4;254;#$primaryContainer #\]4;253;#$secondary #\]4;252;#$secondaryContainer #\]4;251;#$tertiary #\]4;250;#$tertiaryContainer #\]4;249;#$error #\]4;248;#$errorContainer #\]4;232;#$onPrimary #\]4;233;#$onPrimaryContainer #\]4;234;#$onSecondary #\]4;235;#$onSecondaryContainer #\]4;236;#$onTertiary #\]4;237;#$onTertiaryContainer #\]4;238;#$onError #\]4;239;#$onErrorContainer #\]4;240;#$onPrimary #\]4;243;#$primary #\]4;244;#$error #\]4;245;#$outlineVariant #\]10;#$term7 #\]11;#$term0 #\]12;#$term7 #\]13;#$term7 #\]17;#$term7 #\]19;#$term0 #\]708;#$term0 #
 \ No newline at end of file
+diff --git a/dots/.config/quickshell/ii/services/HyprlandXkb.qml b/dots/.config/quickshell/ii/services/HyprlandXkb.qml
+old mode 100644
+new mode 100755
+index 162015d2..8249ff0d
+--- a/dots/.config/quickshell/ii/services/HyprlandXkb.qml
++++ b/dots/.config/quickshell/ii/services/HyprlandXkb.qml
+@@ -8,6 +8,13 @@ import qs.modules.common
+ 
+ /**
+  * Exposes the active Hyprland Xkb keyboard layout name and code for indicators.
++ *
++ * Hyprland sends one "activelayout" event per keyboard device, virtual ones
++ * included (power button, video bus, ...). Only the main keyboard (the one
++ * you type on) is trusted; after every burst of events the real state is
++ * read back once, so a device that drifted can never leave a wrong label.
++ * Layout names are turned into codes with a table read once at startup, so
++ * quick successive switches can't drop a lookup.
+  */
+ Singleton {
+     id: root
+@@ -18,61 +25,56 @@ Singleton {
+     property string currentLayoutCode: ""
+     // For the service
+     property var baseLayoutFilePath: "/usr/share/X11/xkb/rules/base.lst"
+-    property bool needsLayoutRefresh: false
++    property string mainKeyboard: ""
++    property bool fetchPending: false
+ 
+     // Update the layout code according to the layout name (Hyprland gives the name not the code)
+     onCurrentLayoutNameChanged: root.updateLayoutCode()
+     function updateLayoutCode() {
+-        if (cachedLayoutCodes.hasOwnProperty(currentLayoutName)) {
++        if (cachedLayoutCodes.hasOwnProperty(currentLayoutName))
+             root.currentLayoutCode = cachedLayoutCodes[currentLayoutName];
+-        } else {
+-            getLayoutProc.running = true;
+-        }
+     }
+ 
+-    // Get the layout code from the base.lst file by grabbing the line with the current layout name
++    // Read the layout name -> code table once (same matching rules as before:
++    // the first line whose description matches wins)
+     Process {
+-        id: getLayoutProc
++        id: layoutTableProc
++        running: true
+         command: ["cat", root.baseLayoutFilePath]
+ 
+         stdout: StdioCollector {
+             id: layoutCollector
+ 
+             onStreamFinished: {
+-                const lines = layoutCollector.text.split("\n");
+-                const targetDescription = root.currentLayoutName;
+-                const foundLine = lines.find(line => {
++                const table = {};
++                for (const line of layoutCollector.text.split("\n")) {
+                     // Skip comment lines and empty lines
+                     if (!line.trim() || line.trim().startsWith('!'))
+-                        return false;
+-
+-                    // Match layout: (whitespace + ) key + whitespace + description
++                        continue;
++                    // Layout: (whitespace + ) key + whitespace + description
+                     const matchLayout = line.match(/^\s*(\S+)\s+(.+)$/);
+-                    if (matchLayout && matchLayout[2] === targetDescription) {
+-                        root.cachedLayoutCodes[matchLayout[2]] = matchLayout[1];
+-                        root.currentLayoutCode = matchLayout[1];
+-                        return true;
++                    if (matchLayout && !table.hasOwnProperty(matchLayout[2])) {
++                        table[matchLayout[2]] = matchLayout[1];
++                        continue;
+                     }
+-
+-                    // Match variant: (whitespace + ) variant + whitespace + key + whitespace + description
++                    // Variant: (whitespace + ) variant + whitespace + key + whitespace + description
+                     const matchVariant = line.match(/^\s*(\S+)\s+(\S+)\s+(.+)$/);
+-                    if (matchVariant && matchVariant[3] === targetDescription) {
+-                        const complexLayout = matchVariant[2] + matchVariant[1];
+-                        root.cachedLayoutCodes[matchVariant[3]] = complexLayout;
+-                        root.currentLayoutCode = complexLayout;
+-                        return true;
+-                    }
+-                    
+-                    return false;
+-                });
+-                // console.log("[HyprlandXkb] Found line:", foundLine);
+-                // console.log("[HyprlandXkb] Layout:", root.currentLayoutName, "| Code:", root.currentLayoutCode);
+-                // console.log("[HyprlandXkb] Cached layout codes:", JSON.stringify(root.cachedLayoutCodes, null, 2));
++                    if (matchVariant && !table.hasOwnProperty(matchVariant[3]))
++                        table[matchVariant[3]] = matchVariant[2] + matchVariant[1];
++                }
++                root.cachedLayoutCodes = table;
++                root.updateLayoutCode();
+             }
+         }
+     }
+ 
+-    // Find out available layouts and current active layout. Should only be necessary on init
++    // Available layouts, the main keyboard and its active layout
++    function fetchLayouts() {
++        if (fetchLayoutsProc.running)
++            root.fetchPending = true;
++        else
++            fetchLayoutsProc.running = true;
++    }
+     Process {
+         id: fetchLayoutsProc
+         running: true
+@@ -82,38 +84,52 @@ Singleton {
+             id: devicesCollector
+             onStreamFinished: {
+                 const parsedOutput = JSON.parse(devicesCollector.text);
+-                const hyprlandKeyboard = parsedOutput["keyboards"].find(kb => kb.main === true);
++                const keyboards = parsedOutput["keyboards"];
++                const hyprlandKeyboard = keyboards.find(kb => kb.main === true) ?? keyboards[0];
++                if (!hyprlandKeyboard)
++                    return;
++                root.mainKeyboard = hyprlandKeyboard["name"];
+                 root.layoutCodes = hyprlandKeyboard["layout"].split(",");
+                 root.currentLayoutName = hyprlandKeyboard["active_keymap"];
+-                // console.log("[HyprlandXkb] Fetched | Layouts (multiple: " + (root.layoutCodes.length > 1) + "): "
+-                //     + root.layoutCodes.join(", ") + " | Active: " + root.currentLayoutName);
++            }
++        }
++        onRunningChanged: {
++            if (!running && root.fetchPending) {
++                root.fetchPending = false;
++                running = true;
+             }
+         }
+     }
+ 
++    // Read the real state back once a burst of events is over
++    Timer {
++        id: verifyTimer
++        interval: 60
++        onTriggered: root.fetchLayouts()
++    }
++
+     // Update the layout name when it changes
+     Connections {
+         target: Hyprland
+         function onRawEvent(event) {
+             if (event.name === "activelayout") {
+-                if (root.needsLayoutRefresh) {
+-                    root.needsLayoutRefresh = false;
+-                    fetchLayoutsProc.running = true;
+-                }
+-
+                 // If there's only one layout, the updated layout is always the same
+-                if (root.layoutCodes.length <= 1) return;
+-
+-                // Update when layout might have changed
+-                const dataString = event.data;
+-                root.currentLayoutName = dataString.substring(dataString.indexOf(",") + 1);
+-
+-                // Update layout for on-screen keyboard (osk)
+-                Config.options.osk.layout = root.currentLayoutName.split(" (")[0];
++                if (root.layoutCodes.length > 1) {
++                    // KEYBOARD,LAYOUT NAME: show it at once if it's the main keyboard
++                    const dataString = event.data;
++                    const keyboard = dataString.substring(0, dataString.indexOf(","));
++                    if (keyboard === root.mainKeyboard || root.mainKeyboard === "") {
++                        root.currentLayoutName = dataString.substring(dataString.indexOf(",") + 1);
++                        // Update layout for on-screen keyboard (osk)
++                        Config.options.osk.layout = root.currentLayoutName.split(" (")[0];
++                    }
++                }
++                verifyTimer.restart();
+             } else if (event.name == "configreloaded") {
+-                // Mark layout code list to be updated when config is reloaded
+-                root.needsLayoutRefresh = true;
++                // The layout list may have changed
++                verifyTimer.restart();
+             }
+         }
+     }
++
+ }
 diff --git a/dots/.config/starship.toml b/dots/.config/starship.toml
 old mode 100644
 new mode 100755

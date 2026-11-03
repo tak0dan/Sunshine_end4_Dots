@@ -86,6 +86,10 @@ On such layouts use the numpad, which is still bound.
   workspace at startup only; windows opened later go to the current workspace.
 - **Keyboard layouts:** `us`, `es`, `ua`. Each window remembers its own layout
   (`Tak0-Per-Window-Switch.py`, running as a systemd user service).
+- **The bar's layout indicator** follows a switch at once and always shows the layout of the
+  keyboard you type on. end-4's version took the last event from any device, virtual ones
+  included, looked each name up with a separate process (dropping quick successive switches),
+  and animated every change.
 - The active window border is the solid accent colour (end-4: a faint outline).
 
 ### Terminals and shell
