@@ -1,10 +1,10 @@
 dots/.config/btop/btop.conf
 dots/.config/darklyrc
 dots/.config/dolphinrc
-dots/.config/fastfetch/SUN_colored.txt
 dots/.config/fastfetch/config.jsonc
 dots/.config/fastfetch/custom-info.json
 dots/.config/fastfetch/custom-info.sh
+dots/.config/fastfetch/SUN_colored.txt
 dots/.config/fish/config.fish
 dots/.config/foot/foot.ini
 dots/.config/hypr/hyprland/execs.lua
@@ -26,6 +26,8 @@ dots/.config/matugen/templates/wallpaper-theme/spicetify/theme.js
 dots/.config/matugen/templates/wallpaper-theme/spicetify/user.css
 dots/.config/matugen/templates/wallpaper-theme/wallpaper-theme.py
 dots/.config/matugen/templates/wallpaper-theme/wallpaper_view.py
+dots/.config/quickshell/ii/modules/ii/bar/HyprlandXkbIndicator.qml
 dots/.config/quickshell/ii/scripts/colors/terminal/sequences.txt
+dots/.config/quickshell/ii/services/HyprlandXkb.qml
 dots/.config/starship.toml
 dots/.config/wallust/wallust.toml
