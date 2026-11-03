@@ -1,0 +1,13 @@
+[Unit]
+Description=Sunshine Hyprland Dots per-window keyboard layout listener
+StartLimitIntervalSec=0
+
+[Service]
+# The script exits when Hyprland's event socket closes (for example on a
+# Hyprland restart), so restart it whenever it stops.
+ExecStart=%h/.config/hypr/scripts/Tak0-Per-Window-Switch.py --listener
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,1905 @@
+#!/usr/bin/env python3
+"""cpmatrix - cmatrix-style hex rain with Cyberpunk 2077 hacking animations.
+
+Layers, bottom to top:
+  * full-terminal hex-code rain
+  * decorative hacking windows (Breach Protocol, Quickhack Upload, Daemons,
+    Memory Scan, ICE Breaker, Ping Network, Signal Intercept, Target
+    Acquisition). They can chain: a window may spawn a neighbour joined by a
+    pulsing connector, and every connected pair spawns a Network Handshake.
+  * btop-like live system widgets (CPU, memory, network, disk, processes),
+    a separate group with its own spawn timing and capacity
+  * short, frequent glitch bursts over everything
+  * rarely (1 in 250 windows): a ~200 s deep-search chain of 2-5 linked windows,
+    each a unique animation with branching connectors
+Every ordinary window (widgets included, shown as a T- countdown) lives a random 5-27 s. q, Esc or Ctrl-C quits.
+"""
+import argparse
+import glob
+import math
+import os
+import random
+import re
+import select
+import shutil
+import signal
+import sys
+import termios
+import time
+import tty
+from collections import Counter, deque
+from types import SimpleNamespace
+
+CODES = ["1C", "55", "BD", "E9", "7A", "FF"]
+HEX = "0123456789ABCDEF"
+
+YEL = (208, 237, 87)
+HEAD = (236, 255, 172)
+CYAN = (97, 242, 245)
+RED = (255, 75, 75)
+DIM = (22, 30, 11)
+GUIDE_BG = (44, 56, 14)
+BLACK = (8, 10, 4)
+WBG = (9, 12, 5)
+
+FLOOR = 0.13
+
+
+def rt():
+    return random.choice(CODES)
+
+
+def rs():
+    return random.choice(HEX) + random.choice(HEX)
+
+
+def mix(a, b, t):
+    return tuple(int(x + (y - x) * t) for x, y in zip(a, b))
+
+
+def st(f, b=None, bold=False):
+    s = "\x1b[0" + (";1" if bold else "") + ";38;2;%d;%d;%d" % f
+    if b:
+        s += ";48;2;%d;%d;%d" % b
+    return s + "m"
+
+
+# background styles (no bg so transparent terminals show through)
+LEVELS = 16
+PALETTE = [st(mix(DIM, YEL, (i / (LEVELS - 1)) ** 1.3)) for i in range(LEVELS)]
+BG_HEAD = st(HEAD, None, True)
+BG_SCR = st(CYAN)
+
+# window styles
+W_Y = st(YEL, WBG)
+W_YD = st(mix(DIM, YEL, 0.5), WBG)
+W_YB = st(YEL, WBG, True)
+W_C = st(CYAN, WBG, True)
+W_CD = st(mix(DIM, CYAN, 0.5), WBG)
+W_R = st(RED, WBG, True)
+W_INV = st(BLACK, YEL, True)
+W_CINV = st(BLACK, CYAN, True)
+W_GUIDE = st(YEL, GUIDE_BG)
+W_BORDER = st(mix(DIM, YEL, 0.6), WBG)
+W_EDGE = st(CYAN, WBG, True)
+GLITCH_STYLES = (st(RED, None, True), st(CYAN, None, True), st(HEAD, None, True))
+FLASH_STYLES = (st(BLACK, CYAN, True), st(BLACK, RED, True), st(BLACK, YEL, True))
+L_LINE = st(mix(DIM, YEL, 0.65))
+L_PULSE = st(CYAN, None, True)
+RESET = "\x1b[0m"
+
+# green -> yellow -> red value gradient for graphs and bars
+_LOW = (120, 150, 50)
+GRAD = [st(mix(_LOW, YEL, i / 5) if i < 6 else mix(YEL, RED, (i - 5) / 4), WBG) for i in range(10)]
+BLOCKS = " ▁▂▃▄▅▆▇█"
+
+
+def vstyle(f):
+    return GRAD[int(max(0.0, min(1.0, f)) * 9)]
+
+
+class Buf:
+    def __init__(self, h, w, sty):
+        self.h, self.w = h, w
+        self.ch = [[" "] * w for _ in range(h)]
+        self.st = [[sty] * w for _ in range(h)]
+
+    def put(self, r, c, text, sty=None):
+        if not 0 <= r < self.h:
+            return
+        for i, x in enumerate(text):
+            cc = c + i
+            if 0 <= cc < self.w:
+                self.ch[r][cc] = x
+                if sty:
+                    self.st[r][cc] = sty
+
+    def border(self, title=None, bs=W_BORDER, ts=W_YB):
+        h, w = self.h, self.w
+        if h < 2 or w < 2:
+            return
+        self.put(0, 0, "┌" + "─" * (w - 2) + "┐", bs)
+        self.put(h - 1, 0, "└" + "─" * (w - 2) + "┘", bs)
+        for r in range(1, h - 1):
+            self.put(r, 0, "│", bs)
+            self.put(r, w - 1, "│", bs)
+        if title:
+            self.put(0, 2, "┤", bs)
+            self.put(0, 3, " " + title + " ", ts)
+            self.put(0, 5 + len(title), "├", bs)
+
+    def blit(self, src, r0, c0):
+        for r in range(src.h):
+            for c in range(src.w):
+                if 0 <= r0 + r < self.h and 0 <= c0 + c < self.w:
+                    self.ch[r0 + r][c0 + c] = src.ch[r][c]
+                    self.st[r0 + r][c0 + c] = src.st[r][c]
+
+
+def blink(t, hz=3):
+    return int(t * hz) % 2 == 0
+
+
+def graph(b, r0, c0, h, w, data, maxv, sty=None):
+    if h < 1 or w < 1:
+        return
+    vals = list(data)[-w:]
+    off = w - len(vals)
+    for i, v in enumerate(vals):
+        f = max(0.0, min(1.0, v / maxv)) if maxv else 0.0
+        e = int(f * h * 8 + 0.5)
+        if e == 0:
+            b.put(r0 + h - 1, c0 + off + i, "▁", W_YD)
+            continue
+        s = sty or vstyle(f)
+        for k in range(h):
+            n = max(0, min(8, e - k * 8))
+            if n:
+                b.put(r0 + h - 1 - k, c0 + off + i, BLOCKS[n], s)
+
+
+def bar(b, r, c, w, f, sty=None):
+    if w < 1:
+        return
+    f = max(0.0, min(1.0, f))
+    n = int(f * w + 0.5)
+    b.put(r, c, "█" * n, sty or vstyle(f))
+    b.put(r, c + n, "░" * (w - n), W_YD)
+
+
+def fmt_b(n):
+    for u in "BKMGT":
+        if n < 1024 or u == "T":
+            return ("%.0f%s" if u == "B" else "%.1f%s") % (n, u)
+        n /= 1024.0
+
+
+# ------------------------------------------------------- hacking animations
+
+
+class BreachC:
+    title = "BREACH PROTOCOL"
+    min_size = (22, 10)
+    max_size = (36, 15)
+
+    def __init__(self, ih, iw):
+        self.cols = max(2, min(8, iw // 3))
+        self.rows = max(2, min(7, ih - 3))
+        self.ox = (iw - self.cols * 3) // 2
+        self.grid = [[rt() for _ in range(self.cols)] for _ in range(self.rows)]
+        n = random.randint(3, 5)
+        axis = random.choice(("row", "col"))
+        r, c = random.randrange(self.rows), random.randrange(self.cols)
+        self.steps = []
+        for _ in range(n):
+            if axis == "row":
+                nc = random.choice([x for x in range(self.cols) if x != c])
+                self.steps.append(("row", r, random.choice((0, self.cols - 1)), nc))
+                c, axis = nc, "col"
+            else:
+                nr = random.choice([x for x in range(self.rows) if x != r])
+                self.steps.append(("col", c, random.choice((0, self.rows - 1)), nr))
+                r, axis = nr, "row"
+        self.step_t = random.uniform(0.5, 0.8)
+        self.duration = n * self.step_t + 1.4
+
+    def cell(self, k):
+        ax, fx, _, tg = self.steps[k]
+        return (fx, tg) if ax == "row" else (tg, fx)
+
+    def draw(self, b, t):
+        i = int(t / self.step_t)
+        n = len(self.steps)
+        locked = [self.cell(k) for k in range(min(i, n))]
+        guide = cursor = None
+        if i < n:
+            ax, fx, start, tg = self.steps[i]
+            p = min(1.0, (t / self.step_t - i) / 0.7)
+            p = 1 - (1 - p) ** 2
+            pos = int(round(start + (tg - start) * p))
+            guide = (ax, fx)
+            cursor = (fx, pos) if ax == "row" else (pos, fx)
+        done = i >= n
+        b.put(0, 1, "BUFFER", W_YD)
+        for k, (r, c) in enumerate(locked):
+            b.put(0, 8 + k * 5, "[%s]" % self.grid[r][c], W_C)
+        for r in range(self.rows):
+            for c in range(self.cols):
+                if (r, c) == cursor:
+                    s, tx = W_INV, rs()
+                elif (r, c) in locked:
+                    s = W_INV if done and blink(t, 6) else W_CINV
+                    tx = self.grid[r][c]
+                elif guide and ((guide[0] == "row" and guide[1] == r) or (guide[0] == "col" and guide[1] == c)):
+                    s, tx = W_GUIDE, self.grid[r][c]
+                else:
+                    s, tx = W_Y, self.grid[r][c]
+                b.put(2 + r, self.ox + c * 3, tx + " ", s)
+        if done and blink(t):
+            b.put(b.h - 1, 1, "BREACH SUCCESSFUL", W_C)
+
+
+QUICKHACKS = ["CONTAGION", "SHORT CIRCUIT", "REBOOT OPTICS", "OVERHEAT", "SYSTEM RESET",
+              "MEMORY WIPE", "CYBERPSYCHOSIS", "SONIC SHOCK", "BLINDING LIGHT", "WHISTLE"]
+
+
+class UploadC:
+    title = "QUICKHACK UPLOAD"
+    min_size = (30, 8)
+    max_size = (54, 12)
+
+    def __init__(self, ih, iw):
+        self.name = random.choice(QUICKHACKS)
+        self.dur = random.uniform(4, 7)
+        self.duration = self.dur + 1.5
+        k = random.randint(4, 8)
+        ts = sorted(random.random() for _ in range(k - 1))
+        ps = sorted(random.random() for _ in range(k - 1))
+        self.knots = list(zip([0] + ts + [1], [0] + ps + [1]))
+        self.seed = random.randrange(1 << 30)
+
+    def prog(self, t):
+        x = min(1.0, t / self.dur)
+        for (t0, p0), (t1, p1) in zip(self.knots, self.knots[1:]):
+            if x <= t1:
+                u = (x - t0) / max(1e-6, t1 - t0)
+                return p0 + (p1 - p0) * u * u * (3 - 2 * u)
+        return 1.0
+
+    def draw(self, b, t):
+        p = self.prog(t)
+        bw = b.w - 8
+        fill = int(p * bw)
+        b.put(0, 1, "UPLOADING", W_YD)
+        b.put(0, 11, self.name, W_YB)
+        b.put(2, 1, "█" * fill, W_Y)
+        b.put(2, 1 + fill, "░" * (bw - fill), W_YD)
+        b.put(2, bw + 2, "%3d%%" % int(p * 100), W_C)
+        for r in range(4, b.h - 1):
+            rng = random.Random(self.seed + int(t * 10) * 31 + r)
+            line = " ".join(rng.choice(CODES) for _ in range((b.w - 2) // 3))
+            b.put(r, 1, line, W_YD)
+        if p >= 1:
+            if blink(t):
+                b.put(b.h - 1, 1, "UPLOAD COMPLETE", W_C)
+        else:
+            b.put(b.h - 1, 1, "PACKETS %05d" % int(p * 40960), W_YD)
+
+
+DAEMONS = ["DATAMINE_V1", "DATAMINE_V2", "ICEPICK", "MASS VULNERABILITY", "CAMERA SHUTDOWN",
+           "FRIENDLY TURRETS", "NEUTRALIZE MALWARE", "OPTICS JAMMER", "WEAPONS JAMMER", "RESET ICE"]
+
+
+class DaemonC:
+    title = "DAEMONS"
+    min_size = (30, 8)
+    max_size = (44, 13)
+
+    def __init__(self, ih, iw):
+        n = max(2, min(ih - 1, 6))
+        self.names = random.sample(DAEMONS, n)
+        order = list(range(n))
+        random.shuffle(order)
+        self.t0 = [0.0] * n
+        for rank, i in enumerate(order):
+            self.t0[i] = 0.3 + rank * random.uniform(0.5, 1.0)
+        self.ln = [random.uniform(0.7, 1.5) for _ in range(n)]
+        self.fail = [random.random() < 0.15 for _ in range(n)]
+        self.duration = max(a + b for a, b in zip(self.t0, self.ln)) + 1.3
+
+    def draw(self, b, t):
+        for i, name in enumerate(self.names):
+            t0, ln = self.t0[i], self.ln[i]
+            if t < t0:
+                b.put(i, 1, "▒" * len(name), W_YD)
+            elif t < t0 + ln:
+                k = int((t - t0) / ln * len(name))
+                txt = name[:k] + "".join(random.choice(HEX) if x != " " else " " for x in name[k:])
+                b.put(i, 1, txt, W_C)
+                b.put(i, b.w - 7, "[....]", W_CD)
+            else:
+                b.put(i, 1, name, W_R if self.fail[i] else W_YB)
+                b.put(i, b.w - 7, "[FAIL]" if self.fail[i] else "[ OK ]", W_R if self.fail[i] else W_C)
+
+
+class HexC:
+    title = "MEMORY SCAN"
+    min_size = (30, 8)
+    max_size = (58, 16)
+
+    def __init__(self, ih, iw):
+        self.n = max(2, min(8, (iw - 10) // 4))
+        self.seed = random.randrange(1 << 30)
+        self.speed = random.uniform(6, 14)
+        self.duration = random.uniform(5, 8)
+        self.base = random.randrange(0x10000, 0xF0000, 8)
+
+    def row(self, idx):
+        rng = random.Random(self.seed + idx)
+        return [rng.choice(CODES) if rng.random() < 0.6 else "%02X" % rng.randrange(256) for _ in range(self.n)]
+
+    def draw(self, b, t):
+        top = int(t * self.speed)
+        rows = b.h - 1
+        scan = int(t * 4) % rows
+        scol = int(t * 9) % self.n
+        rng = random.Random(int(t * 10))
+        hot = {(rng.randrange(rows), rng.randrange(self.n)) for _ in range(3)}
+        for rr in range(rows):
+            data = self.row(top + rr)
+            addr = "%06X" % (self.base + (top + rr) * self.n)
+            rowsty = W_GUIDE if rr == scan else W_YD
+            b.put(rr, 1, addr + "  ", W_Y if rr == scan else W_YD)
+            x = 9
+            for k, v in enumerate(data):
+                s = W_INV if (rr == scan and k == scol) else W_C if (rr, k) in hot else rowsty
+                b.put(rr, x, v + " ", s)
+                x += 3
+            asc = "".join(chr(33 + int(v, 16) % 90) for v in data)
+            b.put(rr, x + 1, asc, rowsty)
+        pct = min(100, int(t / self.duration * 100))
+        b.put(b.h - 1, 1, "SCANNING 0x%06X  %3d%%" % (self.base + top * self.n, pct), W_C)
+
+
+class CrackC:
+    title = "ICE BREAKER"
+    min_size = (30, 9)
+    max_size = (46, 12)
+
+    def __init__(self, ih, iw):
+        self.n = max(6, min(16, iw - 14))
+        self.total = random.uniform(5, 8)
+        self.ok = random.random() < 0.78
+        self.key = [random.choice(HEX) for _ in range(self.n)]
+        self.lock = [random.uniform(0.8, self.total * 0.85) for _ in range(self.n)]
+        if not self.ok:
+            self.lock[random.randrange(self.n)] = math.inf
+        self.end = max(self.lock) if self.ok else self.total
+        self.duration = self.end + 1.6
+
+    def draw(self, b, t):
+        te = min(t, self.end)
+        failed = not self.ok and t >= self.total
+        b.put(0, 1, "ACCESS KEY", W_YD)
+        b.put(2, 1, "[", W_YD)
+        for k in range(self.n):
+            if t >= self.lock[k]:
+                b.put(2, 2 + k * 2, self.key[k], W_YB)
+            else:
+                b.put(2, 2 + k * 2, random.choice(HEX), W_R if failed else W_C)
+        b.put(2, 2 + self.n * 2, "]", W_YD)
+        frac = max(0.0, 1 - te / self.total)
+        bw = b.w - 14
+        fill = int(frac * bw)
+        low = frac < 0.35
+        s = W_R if low and blink(t, 5) else W_Y
+        b.put(4, 1, "TRACE", W_YD)
+        b.put(4, 7, "█" * fill, s)
+        b.put(4, 7 + fill, "░" * (bw - fill), W_YD)
+        b.put(4, bw + 8, "%4.1fs" % (self.total - te), W_R if low else W_Y)
+        if t >= self.end and blink(t):
+            if self.ok:
+                b.put(b.h - 1, 1, "ACCESS GRANTED", W_C)
+            else:
+                b.put(b.h - 1, 1, "ACCESS DENIED", W_R)
+
+
+class PingC:
+    """Netrunner ping: expanding rings reveal devices that then fade."""
+    title = "PING NETWORK"
+    min_size = (30, 10)
+    max_size = (52, 18)
+
+    def __init__(self, ih, iw):
+        self.h, self.w = ih - 1, iw
+        self.cy, self.cx = (self.h - 1) / 2, (iw - 1) / 2
+        self.speed = random.uniform(7, 11)
+        self.maxd = math.hypot(self.cx / 2, self.cy) + 1
+        self.loop = self.maxd + 3
+        self.blips = []
+        for _ in range(random.randint(5, 9)):
+            r, c = random.randrange(self.h), random.randrange(max(1, iw - 5))
+            self.blips.append((r, c, self.dist(r, c), rt()))
+        self.duration = self.loop / self.speed * random.randint(2, 3) + 1
+
+    def dist(self, r, c):
+        return math.hypot((c - self.cx) / 2, r - self.cy)
+
+    def draw(self, b, t):
+        total = t * self.speed
+        rr = total % self.loop
+        for r in range(self.h):
+            for c in range(self.w):
+                d = self.dist(r, c)
+                e = abs(d - rr)
+                if e < 0.55:
+                    b.put(r, c, "•" if e < 0.3 else "·", W_C)
+                elif abs(d - round(d / 4) * 4) < 0.22:
+                    b.put(r, c, "·", W_YD)
+        b.put(int(self.cy), int(self.cx), "╋", W_C)
+        seen = 0
+        for r, c, d, tok in self.blips:
+            if total < d:
+                continue
+            seen += 1
+            age = ((total - d) % self.loop) / self.speed
+            if age < 0.4:
+                b.put(r, c, "◆", W_CINV)
+                b.put(r, c + 2, tok, W_CINV)
+            elif age < 2.5:
+                b.put(r, c, "◆", W_C)
+                b.put(r, c + 2, tok, W_C)
+            else:
+                b.put(r, c, "◇", W_YD)
+        b.put(b.h - 1, 1, "DEVICES %d/%d   SWEEP %d" % (seen, len(self.blips), int(total / self.loop) + 1), W_YB)
+
+
+class WaveC:
+    """Signal intercept: noisy trace tunes into a clean locked waveform."""
+    title = "SIGNAL INTERCEPT"
+    min_size = (30, 9)
+    max_size = (56, 16)
+
+    def __init__(self, ih, iw):
+        self.shape = random.choice(("sin", "sq", "saw", "mix"))
+        self.freq = random.uniform(0.25, 0.6)
+        self.speed = random.uniform(3, 7)
+        self.target = random.uniform(88, 990)
+        self.t_noise = random.uniform(1.5, 2.5)
+        self.t_tune = random.uniform(2.0, 3.0)
+        self.duration = self.t_noise + self.t_tune + 2.5
+
+    def wave(self, x, t):
+        u = x * self.freq - t * self.speed
+        s = math.sin(u)
+        if self.shape == "sq":
+            return 1.0 if s >= 0 else -1.0
+        if self.shape == "saw":
+            return (u / math.pi) % 2 - 1
+        if self.shape == "mix":
+            return 0.6 * s + 0.4 * math.sin(2.7 * u)
+        return s
+
+    def draw(self, b, t):
+        rows = b.h - 2
+        mid = 1 + rows // 2
+        half = (rows - 1) / 2
+        nl = 1.0 if t < self.t_noise else max(0.0, 1 - (t - self.t_noise) / self.t_tune)
+        locked = t >= self.t_noise + self.t_tune
+        for x in range(1, b.w - 1, 2):
+            b.put(mid, x, "·", W_YD)
+        sty = W_C if locked else W_R if nl > 0.7 else W_Y
+        prev = None
+        for x in range(1, b.w - 1):
+            a = max(-1.0, min(1.0, self.wave(x, t) + random.uniform(-1, 1) * nl * 1.3))
+            row = int(round(mid - a * half))
+            if prev is not None:
+                for y in range(min(prev, row) + 1, max(prev, row)):
+                    b.put(y, x, "│", sty)
+            b.put(row, x, "█" if abs(row - (prev if prev is not None else row)) < 2 else "▒", sty)
+            prev = row
+        shown = self.target * (1 - nl) + random.uniform(80, 1000) * nl
+        b.put(0, 1, "FREQ %6.1f MHz" % shown, W_C if locked else W_YB)
+        if locked:
+            if blink(t):
+                b.put(b.h - 1, 1, "SIGNAL LOCKED", W_C)
+        else:
+            b.put(b.h - 1, 1, "SCANNING..." if nl > 0.7 else "TUNING...", W_YD)
+
+
+class TargetC:
+    """Targeting reticle: sweep, then brackets converge on a lock."""
+    title = "TARGET ACQUISITION"
+    min_size = (32, 11)
+    max_size = (54, 18)
+
+    def __init__(self, ih, iw):
+        self.h, self.w = ih - 1, iw
+        self.tr = random.randint(2, max(2, self.h - 3))
+        self.tc = random.randint(7, max(7, iw - 8))
+        self.vert = random.random() < 0.5
+        self.sweeps = random.randint(1, 3)
+        self.sw_t = random.uniform(0.9, 1.5)
+        self.t_conv = random.uniform(1.0, 1.6)
+        self.dist = random.uniform(5, 95)
+        self.duration = self.sweeps * self.sw_t + self.t_conv + 2.5
+
+    def draw(self, b, t):
+        h, w = self.h, self.w
+        for r in range(0, h, 2):
+            for c in range(1, w, 4):
+                b.put(r, c, "·", W_YD)
+        t_sweep = self.sweeps * self.sw_t
+        if t < t_sweep:
+            p = (t % self.sw_t) / self.sw_t
+            if self.vert:
+                x = int(p * (w - 1))
+                for k in range(4):
+                    for r in range(h):
+                        b.put(r, x - k, "│" if k == 0 else "░", W_C if k == 0 else W_CD)
+            else:
+                y = int(p * (h - 1))
+                for k in range(3):
+                    b.put(y - k, 0, ("─" if k == 0 else "░") * w, W_C if k == 0 else W_CD)
+            b.put(b.h - 1, 1, "SCANNING SECTOR %d" % (int(t / self.sw_t) + 1), W_YD)
+            return
+        q = min(1.0, (t - t_sweep) / self.t_conv)
+        q = 1 - (1 - q) ** 3
+        top = int(0 + (self.tr - 1) * q)
+        bot = int((h - 1) + (self.tr + 1 - (h - 1)) * q)
+        left = int(0 + (self.tc - 6) * q)
+        right = int((w - 1) + (self.tc + 6 - (w - 1)) * q)
+        for (r, c, ch, dr, dc) in ((top, left, "┌", 1, 1), (top, right, "┐", 1, -1),
+                                   (bot, left, "└", -1, 1), (bot, right, "┘", -1, -1)):
+            b.put(r, c, ch, W_C)
+            b.put(r, c + dc, "─", W_C)
+            b.put(r, c + 2 * dc, "─", W_C)
+            b.put(r + dr, c, "│", W_C)
+        if q >= 1:
+            for c in range(w):
+                if abs(c - self.tc) > 1:
+                    b.put(self.tr, c, "─", W_CD)
+            for r in range(h):
+                if abs(r - self.tr) > 0:
+                    b.put(r, self.tc, "│", W_CD)
+            b.put(self.tr, self.tc, "◎" if blink(t, 4) else "◉", W_R)
+            if blink(t):
+                b.put(b.h - 1, 1, "TARGET LOCKED  D %.1fm" % self.dist, W_R)
+        else:
+            b.put(b.h - 1, 1, "ACQUIRING...", W_YD)
+
+
+class HandshakeC:
+    """Spawned by every connected pair of windows: relay nodes light up."""
+    title = "NETWORK HANDSHAKE"
+    min_size = (36, 11)
+    max_size = (48, 15)
+
+    def __init__(self, ih, iw):
+        self.h, self.w = ih, iw
+        n = random.randint(2, 4)
+        self.xs = [2 + i * (iw - 5) // (n + 1) for i in range(n + 2)]
+        self.ys = [random.randint(2, max(2, ih - 3)) for _ in range(n + 2)]
+        self.ids = [rs() + rs() for _ in range(n + 2)]
+        self.names = ["LOCAL"] + ["RELAY"] * n + ["TARGET"]
+        self.path = []
+        for i in range(n + 1):
+            x0, y0, x1, y1 = self.xs[i], self.ys[i], self.xs[i + 1], self.ys[i + 1]
+            for x in range(x0 + 1, x1):
+                self.path.append((round(y0 + (y1 - y0) * (x - x0) / (x1 - x0)), x))
+        self.node_t = random.uniform(0.35, 0.55)
+        self.t_pk = self.node_t * (n + 2) + 0.3
+        self.pk_speed = random.uniform(30, 45)
+        self.pk_dur = len(self.path) / self.pk_speed
+        self.ok = random.random() < 0.85
+        self.duration = self.t_pk + self.pk_dur * 2 + 2.4
+
+    def draw(self, b, t):
+        n = len(self.xs)
+        shown = min(n, int(t / self.node_t) + 1)
+        if t < self.t_pk:
+            lit_to = 0
+            pk = None
+        else:
+            u = t - self.t_pk
+            lit_to = int(min(1.0, u / self.pk_dur) * len(self.path))
+            pk = int((u % self.pk_dur) * self.pk_speed) if u < self.pk_dur * 2 else None
+        done = t >= self.t_pk + self.pk_dur * 2
+        seg = len(self.path) // max(1, n - 1)
+        for i, (r, c) in enumerate(self.path):
+            if i // max(1, seg) >= shown - 1 and t < self.t_pk:
+                continue
+            if i < lit_to:
+                bad = not self.ok and done and i >= len(self.path) - seg
+                b.put(r, c, "━", W_R if bad else W_C if done else W_Y)
+            else:
+                b.put(r, c, "·", W_YD)
+        if pk is not None and pk < len(self.path):
+            r, c = self.path[pk]
+            b.put(r, c, "◆", W_C)
+        for i in range(shown):
+            x, y = self.xs[i], self.ys[i]
+            b.put(y, x, "◉", W_C if done else W_YB)
+            b.put(y - 1, x - 2, self.ids[i], W_YD)
+            if i in (0, n - 1):
+                b.put(y + 1, x - 2, self.names[i], W_YD)
+        if done and blink(t):
+            b.put(b.h - 1, 1, "LINK ESTABLISHED" if self.ok else "LINK REFUSED", W_C if self.ok else W_R)
+        elif not done and t >= self.t_pk:
+            b.put(b.h - 1, 1, "HANDSHAKE...", W_YD)
+        else:
+            b.put(b.h - 1, 1, "PROBING NODES %d/%d" % (shown, n), W_YD)
+
+
+# ----------------------------------------------------- live system widgets
+
+
+class Sys:
+    INTERVAL = 0.5
+    FS = {"ext4", "ext3", "ext2", "btrfs", "xfs", "f2fs", "vfat", "exfat", "ntfs", "ntfs3", "zfs", "fuseblk"}
+    DISK_RE = re.compile(r"^(sd[a-z]+|vd[a-z]+|xvd[a-z]+|nvme\d+n\d+|mmcblk\d+)$")
+
+    def __init__(self):
+        self.t = 0.0
+        self.ncpu = os.cpu_count() or 1
+        self.cpu_prev, self.cpu = {}, {}
+        self.cpu_hist = deque([0.0] * 400, maxlen=400)
+        self.mem = {"total": 1, "used": 0, "avail": 0, "cached": 0, "swap_total": 0, "swap_used": 0}
+        self.mem_hist = deque([0.0] * 400, maxlen=400)
+        self.net_prev = None
+        self.rx = self.tx = 0.0
+        self.rx_tot = self.tx_tot = 0
+        self.rx_hist = deque([0.0] * 400, maxlen=400)
+        self.tx_hist = deque([0.0] * 400, maxlen=400)
+        self.io_prev = None
+        self.rd = self.wr = 0.0
+        self.io_hist = deque([0.0] * 400, maxlen=400)
+        self.temp = None
+        self.temp_t = 0.0
+        self.disks = []
+        self.disk_t = 0.0
+        self.procs = []
+        self.proc_prev = {}
+        self.proc_t = 0.0
+        self.tick = os.sysconf("SC_CLK_TCK")
+        self.page = os.sysconf("SC_PAGE_SIZE")
+        self.mounts = self.find_mounts()
+
+    def find_mounts(self):
+        seen, out = set(), []
+        try:
+            with open("/proc/mounts") as f:
+                for line in f:
+                    dev, mnt, fs = line.split()[:3]
+                    if fs in self.FS and dev not in seen:
+                        seen.add(dev)
+                        out.append(mnt.replace("\\040", " "))
+        except OSError:
+            pass
+        return out[:6]
+
+    def update(self, now, want_procs):
+        dt = now - self.t
+        if dt < self.INTERVAL:
+            return
+        self.t = now
+        for fn, args in ((self.read_cpu, ()), (self.read_mem, ()), (self.read_net, (dt,)), (self.read_io, (dt,))):
+            try:
+                fn(*args)
+            except (OSError, ValueError, IndexError, ZeroDivisionError):
+                pass
+        if now - self.temp_t > 2:
+            self.temp_t = now
+            self.read_temp()
+        if now - self.disk_t > 5:
+            self.disk_t = now
+            self.read_disks()
+        if want_procs and now - self.proc_t >= 2:
+            try:
+                self.read_procs(now)
+            except (OSError, ValueError, IndexError):
+                pass
+
+    def read_cpu(self):
+        cur = {}
+        with open("/proc/stat") as f:
+            for line in f:
+                if not line.startswith("cpu"):
+                    break
+                p = line.split()
+                v = list(map(int, p[1:9]))
+                cur[p[0]] = (sum(v), v[3] + v[4])
+        for k, (tot, idle) in cur.items():
+            if k in self.cpu_prev:
+                pt, pi = self.cpu_prev[k]
+                if tot - pt > 0:
+                    self.cpu[k] = 100.0 * (1 - (idle - pi) / (tot - pt))
+        self.cpu_prev = cur
+        self.cpu_hist.append(self.cpu.get("cpu", 0.0))
+
+    def read_mem(self):
+        d = {}
+        with open("/proc/meminfo") as f:
+            for line in f:
+                k, v = line.split(":", 1)
+                d[k] = int(v.split()[0])
+        total = d["MemTotal"]
+        avail = d.get("MemAvailable", d.get("MemFree", 0))
+        self.mem = {"total": total, "used": total - avail, "avail": avail,
+                    "cached": d.get("Cached", 0) + d.get("Buffers", 0),
+                    "swap_total": d.get("SwapTotal", 0),
+                    "swap_used": d.get("SwapTotal", 0) - d.get("SwapFree", 0)}
+        self.mem_hist.append((total - avail) / total)
+
+    def read_net(self, dt):
+        rx = tx = 0
+        with open("/proc/net/dev") as f:
+            for line in list(f)[2:]:
+                name, data = line.split(":", 1)
+                if name.strip() == "lo":
+                    continue
+                v = data.split()
+                rx += int(v[0])
+                tx += int(v[8])
+        self.rx_tot, self.tx_tot = rx, tx
+        if self.net_prev:
+            self.rx = max(0.0, (rx - self.net_prev[0]) / dt)
+            self.tx = max(0.0, (tx - self.net_prev[1]) / dt)
+            self.rx_hist.append(self.rx)
+            self.tx_hist.append(self.tx)
+        self.net_prev = (rx, tx)
+
+    def read_io(self, dt):
+        rd = wr = 0
+        with open("/proc/diskstats") as f:
+            for line in f:
+                p = line.split()
+                if self.DISK_RE.match(p[2]):
+                    rd += int(p[5]) * 512
+                    wr += int(p[9]) * 512
+        if self.io_prev:
+            self.rd = max(0.0, (rd - self.io_prev[0]) / dt)
+            self.wr = max(0.0, (wr - self.io_prev[1]) / dt)
+            self.io_hist.append(self.rd + self.wr)
+        self.io_prev = (rd, wr)
+
+    def read_temp(self):
+        best = None
+        for p in glob.glob("/sys/class/thermal/thermal_zone*/temp") + glob.glob("/sys/class/hwmon/hwmon*/temp1_input"):
+            try:
+                with open(p) as f:
+                    v = int(f.read()) / 1000.0
+                best = v if best is None else max(best, v)
+            except (OSError, ValueError):
+                pass
+        self.temp = best
+
+    def read_disks(self):
+        out = []
+        for m in self.mounts:
+            try:
+                s = os.statvfs(m)
+            except OSError:
+                continue
+            total = s.f_blocks * s.f_frsize
+            if total:
+                out.append((m, total, total - s.f_bavail * s.f_frsize))
+        self.disks = out
+
+    def read_procs(self, now):
+        dtp = now - self.proc_t if self.proc_t else 0
+        self.proc_t = now
+        cur, rows = {}, []
+        mem_b = self.mem["total"] * 1024
+        for pid in os.listdir("/proc"):
+            if not pid.isdigit():
+                continue
+            try:
+                with open("/proc/%s/stat" % pid) as f:
+                    data = f.read()
+            except OSError:
+                continue
+            i = data.rfind(")")
+            name = data[data.find("(") + 1:i]
+            f_ = data[i + 2:].split()
+            ticks = int(f_[11]) + int(f_[12])
+            rss = int(f_[21]) * self.page
+            cur[pid] = ticks
+            cpu = 0.0
+            if dtp and pid in self.proc_prev:
+                cpu = (ticks - self.proc_prev[pid]) / self.tick / dtp * 100
+            rows.append((int(pid), name, cpu, rss / mem_b * 100))
+        self.proc_prev = cur
+        rows.sort(key=lambda x: (-x[2], -x[3]))
+        self.procs = rows[:24]
+
+
+SYS = Sys()
+
+
+class CpuW:
+    title = "CPU"
+    min_size = (36, 9)
+    max_size = (72, 24)
+    duration = math.inf
+
+    def __init__(self, ih, iw):
+        pass
+
+    def draw(self, b, t):
+        S = SYS
+        tot = S.cpu.get("cpu", 0.0)
+        b.put(0, 1, "TOTAL", W_YD)
+        b.put(0, 7, "%5.1f%%" % tot, vstyle(tot / 100))
+        info = "LOAD %.2f %.2f %.2f" % os.getloadavg()
+        if S.temp is not None:
+            info += "  %d°C" % S.temp
+        b.put(0, b.w - 1 - len(info), info, W_YD)
+        ncol = 2 if b.w >= 46 else 1
+        per = (S.ncpu + ncol - 1) // ncol
+        crow = min(per, max(0, (b.h - 1) // 2))
+        gh = b.h - 1 - crow
+        graph(b, 1, 0, gh, b.w, S.cpu_hist, 100)
+        cw = (b.w - 1) // ncol
+        bw = cw - 10
+        if bw >= 4:
+            for i in range(min(S.ncpu, crow * ncol)):
+                col, row = divmod(i, crow)
+                x, y = 1 + col * cw, 1 + gh + row
+                v = S.cpu.get("cpu%d" % i, 0.0)
+                b.put(y, x, "%2d " % i, W_YD)
+                bar(b, y, x + 3, bw, v / 100)
+                b.put(y, x + 4 + bw, "%3d%%" % int(v), vstyle(v / 100))
+
+
+class MemW:
+    title = "MEMORY"
+    min_size = (30, 9)
+    max_size = (56, 16)
+    duration = math.inf
+
+    def __init__(self, ih, iw):
+        pass
+
+    def draw(self, b, t):
+        m = SYS.mem
+        tot = max(1, m["total"])
+        used = m["used"] / tot
+        b.put(0, 1, "RAM", W_YD)
+        b.put(0, 5, "%s / %s" % (fmt_b(m["used"] * 1024), fmt_b(m["total"] * 1024)), W_YB)
+        b.put(0, b.w - 5, "%3d%%" % int(used * 100), vstyle(used))
+        bar(b, 1, 1, b.w - 2, used)
+        b.put(2, 1, "CACHE %s   FREE %s" % (fmt_b(m["cached"] * 1024), fmt_b(m["avail"] * 1024)), W_YD)
+        r = 4
+        if m["swap_total"] > 0 and b.h >= 9:
+            sw = m["swap_used"] / m["swap_total"]
+            b.put(r, 1, "SWAP", W_YD)
+            b.put(r, 6, "%s / %s" % (fmt_b(m["swap_used"] * 1024), fmt_b(m["swap_total"] * 1024)), W_YB)
+            b.put(r, b.w - 5, "%3d%%" % int(sw * 100), vstyle(sw))
+            bar(b, r + 1, 1, b.w - 2, sw)
+            r += 3
+        graph(b, r, 0, b.h - r, b.w, SYS.mem_hist, 1.0)
+
+
+class NetW:
+    title = "NETWORK"
+    min_size = (30, 8)
+    max_size = (60, 16)
+    duration = math.inf
+
+    def __init__(self, ih, iw):
+        pass
+
+    def draw(self, b, t):
+        S = SYS
+        half = (b.h - 2) // 2
+        b.put(0, 1, "▼ DOWN", W_C)
+        b.put(0, 9, fmt_b(S.rx) + "/s", W_C)
+        tx = "TOTAL " + fmt_b(S.rx_tot)
+        b.put(0, b.w - 1 - len(tx), tx, W_YD)
+        mx = max(max(list(S.rx_hist)[-b.w:]), 1e5) * 1.1
+        graph(b, 1, 0, half, b.w, S.rx_hist, mx, W_C)
+        r = 1 + half
+        b.put(r, 1, "▲ UP", W_YB)
+        b.put(r, 9, fmt_b(S.tx) + "/s", W_YB)
+        tx = "TOTAL " + fmt_b(S.tx_tot)
+        b.put(r, b.w - 1 - len(tx), tx, W_YD)
+        mx = max(max(list(S.tx_hist)[-b.w:]), 1e5) * 1.1
+        graph(b, r + 1, 0, b.h - r - 1, b.w, S.tx_hist, mx, W_Y)
+
+
+class DiskW:
+    title = "DISK"
+    min_size = (32, 9)
+    max_size = (56, 16)
+    duration = math.inf
+
+    def __init__(self, ih, iw):
+        pass
+
+    def draw(self, b, t):
+        S = SYS
+        n = min(len(S.disks), max(1, (b.h - 4) // 2))
+        r = 0
+        for mnt, tot, used in S.disks[:n]:
+            f = used / tot
+            b.put(r, 1, mnt[: max(4, b.w - 26)], W_YB)
+            txt = "%s / %s %3d%%" % (fmt_b(used), fmt_b(tot), int(f * 100))
+            b.put(r, b.w - 1 - len(txt), txt, vstyle(f))
+            bar(b, r + 1, 1, b.w - 2, f)
+            r += 2
+        if not S.disks:
+            b.put(0, 1, "NO MOUNTS", W_YD)
+            r = 2
+        b.put(r, 1, "IO  R %s/s  W %s/s" % (fmt_b(S.rd), fmt_b(S.wr)), W_C)
+        mx = max(max(list(S.io_hist)[-b.w:]), 1e6) * 1.1
+        graph(b, r + 1, 0, b.h - r - 1, b.w, S.io_hist, mx)
+
+
+class ProcW:
+    title = "PROCESSES"
+    min_size = (40, 9)
+    max_size = (64, 20)
+    duration = math.inf
+
+    def __init__(self, ih, iw):
+        pass
+
+    def draw(self, b, t):
+        nw = max(6, b.w - 2 - 8 - 7 - 7)
+        b.put(0, 1, "%-7s %-*s %6s %6s" % ("PID", nw, "NAME", "CPU%", "MEM%"), W_YD)
+        for i, (pid, name, cpu, mem) in enumerate(SYS.procs[: b.h - 1]):
+            hi = i == 0
+            line = "%-7d %-*s %6.1f %6.1f" % (pid, nw, name[:nw], cpu, mem)
+            s = W_GUIDE if hi else (W_R if cpu > 50 else W_Y)
+            b.put(i + 1, 1, line, s)
+            if hi and blink(t, 2):
+                b.put(i + 1, 9, name[:nw], W_C)
+
+
+# ------------------------------------------- deep search (rare long event)
+
+
+class Pal:
+    """Per-animation colour set: each deep-search window is tinted slightly differently."""
+
+    def __init__(self, a, b=CYAN):
+        self.border = st(mix(DIM, a, 0.6), WBG)
+        self.title = st(a, WBG, True)
+        self.d = st(mix(DIM, a, 0.45), WBG)
+        self.m = st(mix(DIM, a, 0.8), WBG)
+        self.b = st(a, WBG, True)
+        self.hi = st(HEAD, WBG, True)
+        self.s = st(b, WBG, True)
+        self.sd = st(mix(DIM, b, 0.55), WBG)
+        self.line = st(mix(DIM, a, 0.65))
+        self.pulse = st(mix(a, HEAD, 0.35), None, True)
+
+
+class DeepBase:
+    duration = math.inf
+    life = 60.0
+
+    def set_life(self, life):
+        self.life = life
+
+
+JUNC = {frozenset("UD"): "│", frozenset("UL"): "┘", frozenset("UR"): "└", frozenset("ULR"): "┴",
+        frozenset("UDL"): "┤", frozenset("UDR"): "├", frozenset("UDLR"): "┼"}
+NAMES = ["V", "JOHNNY", "JUDY", "PANAM", "ROGUE", "JACKIE", "ALT", "TAKEMURA", "KERRY", "SASHA",
+         "HANAKO", "MEREDITH", "RIVER", "EVELYN", "DUM DUM", "WAKAKO"]
+
+
+class DbDescentC(DeepBase):
+    """Query tree growing level by level, ending on the highlighted path to the target record."""
+    title = "DB QUERY"
+    min_size = (44, 16)
+    max_size = (60, 22)
+    P = Pal(YEL, CYAN)
+
+    def __init__(self, ih, iw):
+        self.h, self.w = ih, iw
+        self.levels = max(3, min(10, (ih - 3) // 2))
+        self.nodes = []
+        self.root = self.build(0, 1, iw - 1, None, 0.0)
+        mf = max(n["f"] for n in self.nodes) or 1.0
+        for n in self.nodes:
+            n["f"] *= 0.82 / mf
+        node = max(self.nodes, key=lambda n: (n["lv"], n["hit"]))
+        self.target = node
+        self.path = set()
+        while node:
+            self.path.add(id(node))
+            node = node["par"]
+
+    def build(self, lv, x0, x1, par, f):
+        n = {"lv": lv, "x": (x0 + x1) // 2, "ch": [], "par": par, "f": f,
+             "id": rs() + rs(), "hit": random.random() < 0.18}
+        self.nodes.append(n)
+        if lv < self.levels - 1 and x1 - x0 >= 1:
+            k = 3 if lv == 0 else random.choices((0, 1, 2, 3), (0.04, 0.6, 0.3, 0.06))[0]
+            k = min(k, max(1, (x1 - x0) // 3))
+            span = (x1 - x0) / max(1, k)
+            for i in range(k):
+                n["ch"].append(self.build(lv + 1, int(x0 + i * span), int(x0 + (i + 1) * span + (k == 1)),
+                                          n, f + random.uniform(0.02, 0.07)))
+        return n
+
+    def draw(self, b, t):
+        P, fr = self.P, t / self.life
+        vis = [n for n in self.nodes if fr >= n["f"]]
+        depth = max(n["lv"] for n in vis) + 1
+        b.put(0, 1, "DEPTH %02d/%02d" % (depth, self.levels), P.b)
+        b.put(0, 16, "RECORDS %s" % format(len(vis) * 173 + int(t * 31) % 173, ","), P.m)
+        for n in self.nodes:
+            if fr < n["f"] or not n["ch"]:
+                continue
+            r, px = 1 + n["lv"] * 2, n["x"]
+            dirs = {"U"}
+            for ch in n["ch"]:
+                if fr < ch["f"]:
+                    continue
+                cx = ch["x"]
+                for x in range(min(px, cx) + 1, max(px, cx)):
+                    b.put(r + 1, x, "─", P.d)
+                if cx == px:
+                    dirs.add("D")
+                else:
+                    dirs.add("L" if cx < px else "R")
+                    b.put(r + 1, cx, "┌" if cx < px else "┐", P.d)
+            b.put(r + 1, px, JUNC.get(frozenset(dirs), "│"), P.d)
+        final = fr > 0.88
+        for n in vis:
+            r, x = 1 + n["lv"] * 2, n["x"]
+            fresh = (fr - n["f"]) * self.life < 1.2
+            if final and id(n) in self.path:
+                b.put(r, x, "◈", P.s)
+            elif n["hit"]:
+                b.put(r, x, "◆", P.s)
+                b.put(r, x + 2, n["id"], P.sd)
+            else:
+                b.put(r, x, "●", P.hi if fresh else P.m)
+        b.put(1 + (depth - 1) * 2, 0, "▶", P.s)
+        if final and blink(t):
+            b.put(b.h - 1, 1, "TARGET FOUND ▸ %s" % self.target["id"], P.s)
+
+
+def line_cells(p0, p1):
+    (r0, c0), (r1, c1) = p0, p1
+    dr, dc = r1 - r0, c1 - c0
+    rd, cd = abs(dr), abs(dc) / 2
+    ch = "─" if cd > 2.5 * rd else "│" if rd > 2.5 * cd else ("╲" if dr * dc > 0 else "╱")
+    cells, last = [], None
+    steps = max(abs(dc), abs(dr) * 2, 1)
+    for k in range(1, steps):
+        p = (round(r0 + dr * k / steps), round(c0 + dc * k / steps))
+        if p != last and p != p0 and p != p1:
+            cells.append((p[0], p[1], ch))
+            last = p
+    return cells
+
+
+class ConnMapC(DeepBase):
+    """Graph of people/entities appearing, then links found between them."""
+    title = "CONNECTION MAP"
+    min_size = (40, 14)
+    max_size = (56, 20)
+    P = Pal(CYAN, YEL)
+
+    def __init__(self, ih, iw):
+        self.h, self.w = ih, iw
+        n = max(6, min(14, ih * iw // 70))
+        self.pts = []
+        for _ in range(400):
+            if len(self.pts) >= n:
+                break
+            r, c = random.randint(1, ih - 2), random.randint(2, max(2, iw - 12))
+            if all(math.hypot((c - pc) / 2, r - pr) >= 4 for pr, pc in self.pts):
+                self.pts.append((r, c))
+        n = len(self.pts)
+        names = random.sample(NAMES, min(n, len(NAMES)))
+        self.names = [names[i] if i < len(names) else rs() + rs() for i in range(n)]
+        self.nf = sorted(random.uniform(0.02, 0.55) for _ in range(n))
+        self.edges = []
+        for i in range(1, n):
+            near = sorted(range(i), key=lambda j: math.hypot((self.pts[i][1] - self.pts[j][1]) / 2,
+                                                            self.pts[i][0] - self.pts[j][0]))
+            for j in near[: 1 + (random.random() < 0.3) + (random.random() < 0.06)]:
+                self.add_edge(j, i)
+        for _ in range(n // 5):
+            a, c = random.sample(range(n), 2) if n > 1 else (0, 0)
+            far = math.hypot((self.pts[a][1] - self.pts[c][1]) / 2, self.pts[a][0] - self.pts[c][0]) > 14
+            if a != c and not far and not any({a, c} == {e[0], e[1]} for e in self.edges):
+                self.add_edge(min(a, c), max(a, c), late=True)
+
+    def add_edge(self, j, i, late=False):
+        f = max(self.nf[i], self.nf[j]) + random.uniform(0.01, 0.05)
+        if late:
+            f = random.uniform(0.5, 0.85)
+        self.edges.append((j, i, f, line_cells(self.pts[j], self.pts[i])))
+
+    def draw(self, b, t):
+        P, fr = self.P, t / self.life
+        links = 0
+        for k, (j, i, f, cells) in enumerate(self.edges):
+            if fr < f:
+                continue
+            links += 1
+            age = (fr - f) * self.life
+            for r, c, ch in cells:
+                b.put(r, c, ch, P.hi if age < 0.7 else P.d)
+            if cells and age >= 0.7:
+                r, c, ch = cells[int(t * 10 + k * 7) % len(cells)]
+                b.put(r, c, ch, P.b)
+        shown = sum(1 for f in self.nf if fr >= f)
+        for (r, c), name, f in zip(self.pts, self.names, self.nf):
+            if fr < f:
+                continue
+            fresh = (fr - f) * self.life < 1.0
+            b.put(r, c, "◉", P.hi if fresh else P.b)
+            b.put(r, c + 2, name, P.s if fresh else P.m)
+        b.put(0, 1, "NODES %d  LINKS %d" % (shown, links), P.b)
+        if fr > 0.9 and blink(t):
+            b.put(b.h - 1, 1, "NETWORK MAPPED", P.s)
+
+
+ICONS = {
+    "V": [" ▄▄▄▄▄ ", "█▀▀▀▀▀█", "█ ◦ ◦ █", " ▀▄▃▄▀ ", "  ███  "],
+    "JOHNNY": [" ▄▄▄▄▄ ", "▐▀▀▀▀▀▌", "▐█▀ ▀█▌", " ▝▃▃▃▘ ", "  ▐█▌  "],
+    "JUDY": [" ▄███▄ ", "██▀▀▀██", "█▌• •▐█", " ▀▄▄▄▀ ", "  ███  "],
+    "PANAM": ["▄▄▄▄▄▄▄", " ▀▀▀▀▀ ", "▐ ◉ ◉ ▌", " ▝▃▃▃▘ ", "  ▐█▌  "],
+    "ROGUE": ["  ▲▲▲  ", " ▐███▌ ", " █•_•█ ", " ▝▀▀▀▘ ", "  ███  "],
+    "JACKIE": [" ▄▄▄▄▄ ", "▐▀▀▀▀▀▌", "▐ • • ▌", "▐▄███▄▌", "  ▀▀▀  "],
+    "ALT": ["▄█▀▀▀█▄", "█ ▒▒▒ █", "█ ◉ ◉ █", " ▀═══▀ ", "  ▐█▌  "],
+}
+
+
+class ProfileC(DeepBase):
+    """Character icons resolve out of noise, then get interconnected."""
+    title = "PROFILE MATCH"
+    min_size = (46, 19)
+    max_size = (60, 21)
+    P = Pal((255, 196, 64), CYAN)
+
+    def __init__(self, ih, iw):
+        self.h, self.w = ih, iw
+        self.ncol = max(1, min(4, (iw + 3) // 10))
+        self.nrow = max(1, min(2, ih // 8))
+        n = self.ncol * self.nrow
+        names = random.sample(list(ICONS), len(ICONS))
+        x00 = (iw - (self.ncol * 10 - 3)) // 2
+        self.slots = [(x00 + (i % self.ncol) * 10, 1 + (i // self.ncol) * 8, names[i % len(names)])
+                      for i in range(n)]
+        order = list(range(n))
+        random.shuffle(order)
+        self.f0 = [0.04 + order[i] * 0.5 / n for i in range(n)]
+        self.pct = [random.randint(78, 99) for _ in range(n)]
+
+    def prog(self, i, fr):
+        return (fr - self.f0[i]) / 0.1
+
+    def draw(self, b, t):
+        P, fr = self.P, t / self.life
+        done = 0
+        for i, (x0, y0, name) in enumerate(self.slots):
+            p = self.prog(i, fr)
+            if p <= 0:
+                b.put(y0 + 2, x0 + 2, "···", P.d)
+                continue
+            ok = min(5, int(p * 6))
+            for r in range(5):
+                if r < ok:
+                    b.put(y0 + r, x0, ICONS[name][r], P.hi if p < 1.2 else P.b)
+                else:
+                    b.put(y0 + r, x0, "".join(random.choice("░▒▓▚▞") for _ in range(7)), P.d)
+            if p >= 1:
+                done += 1
+                b.put(y0 + 5, x0 + (7 - len(name)) // 2, name, P.s)
+                v = min(self.pct[i], int((p - 1) * 40))
+                b.put(y0 + 6, x0 + 1, "%3d%% OK" % v, P.m)
+        links = 0
+        for i, (x0, y0, _) in enumerate(self.slots):
+            if self.prog(i, fr) < 1.3:
+                continue
+            if i % self.ncol and self.prog(i - 1, fr) >= 1.3:
+                links += 1
+                pulse = int(t * 8 + i) % 3
+                for k in range(3):
+                    b.put(y0 + 2, x0 - 3 + k, "◆" if k == pulse else "═", P.s if k == pulse else P.m)
+            if i >= self.ncol and self.prog(i - self.ncol, fr) >= 1.3:
+                links += 1
+                b.put(y0 - 1, x0 + 3, "◆" if int(t * 5 + i) % 2 else "║", P.s)
+        b.put(b.h - 1, 1, "PROFILES %d/%d  LINKED %d" % (done, len(self.slots), links), P.b)
+
+
+FONT = {
+    "A": [" █ ", "█ █", "███", "█ █", "█ █"], "B": ["██ ", "█ █", "██ ", "█ █", "██ "],
+    "C": [" ██", "█  ", "█  ", "█  ", " ██"], "D": ["██ ", "█ █", "█ █", "█ █", "██ "],
+    "E": ["███", "█  ", "██ ", "█  ", "███"], "G": [" ██", "█  ", "█ █", "█ █", " ██"],
+    "H": ["█ █", "█ █", "███", "█ █", "█ █"], "I": ["███", " █ ", " █ ", " █ ", "███"],
+    "K": ["█ █", "█ █", "██ ", "█ █", "█ █"], "L": ["█  ", "█  ", "█  ", "█  ", "███"],
+    "M": ["█ █", "███", "███", "█ █", "█ █"], "N": ["██ ", "█ █", "█ █", "█ █", "█ █"],
+    "O": ["███", "█ █", "█ █", "█ █", "███"], "P": ["██ ", "█ █", "██ ", "█  ", "█  "],
+    "R": ["██ ", "█ █", "██ ", "█ █", "█ █"], "S": [" ██", "█  ", " █ ", "  █", "██ "],
+    "T": ["███", " █ ", " █ ", " █ ", " █ "], "U": ["█ █", "█ █", "█ █", "█ █", "███"],
+    "W": ["█ █", "█ █", "███", "███", "█ █"], "Y": ["█ █", "█ █", " █ ", " █ ", " █ "],
+    "0": ["███", "█ █", "█ █", "█ █", "███"], "2": ["██ ", "  █", " █ ", "█  ", "███"],
+    "7": ["███", "  █", " █ ", " █ ", " █ "], " ": ["   "] * 5,
+}
+
+
+class LogoC(DeepBase):
+    """Block-letter logo assembling out of noise, glitching, dissolving; cycles through names."""
+    title = "LOGO ASSEMBLY"
+    min_size = (46, 16)
+    max_size = (58, 19)
+    P = Pal((255, 220, 40), RED)
+    CYCLE = 14.0
+    WORDS = ["ARASAKA", "MILITECH", "NETWATCH", "BLACKWALL", "KIROSHI", "NIGHT CITY"]
+
+    def __init__(self, ih, iw):
+        self.h, self.w = ih, iw
+        self.order = ["CYBERPUNK"] + random.sample(self.WORDS, len(self.WORDS))
+        self.cache = {}
+
+    def pixels(self, text, row0, delay, red):
+        total = len(text) * 4 - 1
+        x0 = (self.w - total) // 2
+        out = []
+        for i, ch in enumerate(text):
+            g = FONT.get(ch)
+            for r in range(5):
+                for c in range(3):
+                    if g and g[r][c] == "█":
+                        x = x0 + i * 4 + c
+                        a = delay + (x - x0) / max(1, total) * 2.2 + random.uniform(0, 1.4)
+                        out.append((row0 + r, x, a, 10.4 + random.uniform(0, 3.2), red))
+        return out
+
+    def draw(self, b, t):
+        P = self.P
+        cyc = int(t / self.CYCLE)
+        u = t % self.CYCLE
+        word = self.order[cyc % len(self.order)]
+        if cyc not in self.cache:
+            self.cache = {cyc: self.pixels(word, 1, 0.0, False) + self.pixels("2077", 8, 0.8, True)}
+        sweep = (u - 5.5) / 3.0 * (self.w + 8) - 4
+        jr = jd = None
+        if 4.4 < u < 10.2 and random.random() < 0.06:
+            jr, jd = random.randint(1, 12), random.choice((-2, -1, 1, 2))
+        for r, c, a, d, red in self.cache[cyc]:
+            if u < a - 0.5 or u >= d + 0.4:
+                continue
+            if u < a or u >= d:
+                b.put(r, c, random.choice("░▒▓01"), P.d)
+                continue
+            s = P.hi if (u - a < 0.35 or abs(c - sweep) < 2) else (P.s if red else P.b)
+            if r == jr:
+                b.put(r, c + jd, "█", P.s)
+            else:
+                b.put(r, c, "█", s)
+        b.put(0, 1, "RENDER  %s" % word, P.m)
+        b.put(b.h - 1, 1, "ASSET 0x%s%s" % (rs(), rs()) if u < 4.5 else "VERIFIED // 0x%s" % rs(), P.d)
+
+
+class ArchiveC(DeepBase):
+    """Nested access levels zooming inward, ending on the core archive."""
+    title = "ARCHIVE DEPTH"
+    min_size = (40, 15)
+    max_size = (54, 20)
+    P = Pal((80, 230, 170), YEL)
+    PARTS = ["ROOT", "ARASAKA", "SUBNET", "MILITECH", "BLACKWALL", "ARCHIVE", "SEC-OPS", "VAULT", "CORE", "LEGACY"]
+
+    def __init__(self, ih, iw):
+        self.h, self.w = ih, iw
+        self.maxd = max(2, min(8, (ih - 5) // 2, (iw - 24) // 4))
+        self.parts = ["ROOT"] + random.sample(self.PARTS[1:], self.maxd - 1)
+        self.files = ["%s/%s/%04X.DAT" % (random.choice(self.PARTS[1:]), random.choice(("PERSONNEL", "LOGS", "TRACE", "KEYS", "SCHEMATICS")),
+                                          random.randrange(65536)) for _ in range(12)]
+
+    def draw(self, b, t):
+        P, fr = self.P, t / self.life
+        step = 0.8 / self.maxd
+        d = min(self.maxd, 1 + int(fr / step))
+        for k in range(d):
+            r0, r1, c0, c1 = 1 + k, b.h - 2 - k, 1 + 2 * k, b.w - 2 - 2 * k
+            age = (fr - k * step) * self.life
+            cur = k == d - 1
+            s = P.hi if age < 0.5 else P.s if cur else P.d
+            tl, hz, tr, vt, bl, br = "╔═╗║╚╝" if cur else "┌─┐│└┘"
+            b.put(r0, c0, tl + hz * (c1 - c0 - 1) + tr, s)
+            b.put(r1, c0, bl + hz * (c1 - c0 - 1) + br, s)
+            for r in range(r0 + 1, r1):
+                b.put(r, c0, vt, s)
+                b.put(r, c1, vt, s)
+            b.put(r0, c0 + 2, " L%d %s " % (k + 1, self.parts[k]), P.b if cur else P.m)
+        r0, r1, c0, c1 = 1 + d, b.h - 2 - d, 1 + 2 * d, b.w - 2 - 2 * d
+        for j, row in enumerate(range(r0, r1 + 1)):
+            ph = t * 0.8 + j * 0.37
+            name = self.files[(int(ph) * 7 + j) % len(self.files)][: max(0, c1 - c0 - 1)]
+            k = int(min(1.0, (ph % 1) * 2.5) * len(name))
+            b.put(row, c0 + 1, name[:k], P.b)
+            b.put(row, c0 + 1 + k, "".join(random.choice(HEX) for _ in name[k:]), P.d)
+        b.put(b.h - 1, 1, ("/" + "/".join(self.parts[:d]))[: b.w - 12], P.b)
+        b.put(b.h - 1, b.w - 10, "LVL %d/%d" % (d, self.maxd), P.m)
+        if d == self.maxd and fr > 0.9 and blink(t):
+            b.put(b.h // 2, (b.w - 20) // 2, " CORE ARCHIVE REACHED ", P.s)
+
+
+HACKS = [BreachC, UploadC, DaemonC, HexC, CrackC, PingC, WaveC, TargetC]
+WIDGETS = [CpuW, MemW, NetW, DiskW, ProcW]
+DEEPS = [DbDescentC, ConnMapC, ProfileC, LogoC, ArchiveC]
+for _k in HACKS:
+    _k.group = "hack"
+for _k in WIDGETS:
+    _k.group = "sys"
+for _k in DEEPS:
+    _k.group = "deep"
+HandshakeC.group = "link"
+
+FX = ["wipe", "expand", "border", "dissolve"]
+
+# ---------------------------------------------------------------- windows
+
+
+class Win:
+    IN = 0.5
+    OUT = 0.45
+
+    def __init__(self, kind, r, c, h, w, now, life, chain_at=None, level=None):
+        self.kind = kind
+        self.group = kind.group
+        self.level = level
+        self.r, self.c, self.h, self.w = r, c, h, w
+        self.cont = kind(h - 2, w - 2)
+        if hasattr(self.cont, "set_life"):
+            self.cont.set_life(life)
+        self.t0 = now
+        self.cstart = now + self.IN
+        self.life = life
+        self.run_end = now + self.IN + life
+        self.chain_at = chain_at
+        self.intro = random.choice(FX)
+        self.outro = random.choice(FX)
+        self.noise = [[random.random() for _ in range(w)] for _ in range(h)]
+
+    def done(self, now):
+        return now > self.run_end + self.OUT
+
+    def ctime(self, now, run):
+        ct = now - self.cstart
+        if run and ct > self.cont.duration:
+            self.cont = self.kind(self.h - 2, self.w - 2)
+            self.cstart = now
+            ct = 0.0
+        return min(ct, self.cont.duration)
+
+    def compose(self, ct, now):
+        full = Buf(self.h, self.w, W_Y)
+        inner = Buf(self.h - 2, self.w - 2, W_Y)
+        self.cont.draw(inner, ct)
+        full.blit(inner, 1, 1)
+        title = self.cont.title
+        if self.level is not None:
+            title += " // L%d" % (self.level + 1)
+        pal = getattr(self.cont, "P", None)
+        full.border(title, pal.border if pal else W_BORDER, pal.title if pal else W_YB)
+        if self.group == "sys":
+            full.put(0, self.w - 9, " T-%02d " % max(0, int(self.run_end - now + 0.99)), W_YD)
+        return full
+
+    def draw(self, cv, now):
+        t = now - self.t0
+        if t < self.IN:
+            q, fx, ct = t / self.IN, self.intro, 0.0
+        elif now < self.run_end:
+            q, fx, ct = 1.0, None, self.ctime(now, True)
+        elif now < self.run_end + self.OUT:
+            q, fx, ct = 1 - (now - self.run_end) / self.OUT, self.outro, self.ctime(now, False)
+        else:
+            return
+        full = self.compose(ct, now)
+        h, w = self.h, self.w
+        if q >= 1:
+            cv.blit(full, self.r, self.c)
+        elif fx == "wipe":
+            n = math.ceil(h * q)
+            for r in range(n):
+                edge = r == n - 1
+                for c in range(w):
+                    ch, s = full.ch[r][c], full.st[r][c]
+                    if edge:
+                        ch, s = ("─" if ch == " " else ch), W_EDGE
+                    cv.put(self.r + r, self.c + c, ch, s)
+        elif fx == "expand":
+            hh, ww = max(2, round(h * q)), max(3, round(w * q))
+            box = Buf(hh, ww, W_Y)
+            box.border()
+            cv.blit(box, self.r + (h - hh) // 2, self.c + (w - ww) // 2)
+        elif fx == "border":
+            path = ([(0, c) for c in range(w)] + [(r, w - 1) for r in range(1, h)]
+                    + [(h - 1, c) for c in range(w - 2, -1, -1)] + [(r, 0) for r in range(h - 2, 0, -1)])
+            for r, c in path[: int(q * len(path))]:
+                cv.put(self.r + r, self.c + c, full.ch[r][c], full.st[r][c])
+        else:  # dissolve
+            for r in range(h):
+                for c in range(w):
+                    nz = self.noise[r][c]
+                    if nz < q:
+                        cv.put(self.r + r, self.c + c, full.ch[r][c], full.st[r][c])
+                    elif nz < q + 0.12:
+                        cv.put(self.r + r, self.c + c, random.choice(HEX), W_C)
+
+
+CORNER = {frozenset("LR"): "─", frozenset("UD"): "│", frozenset("RD"): "┌",
+          frozenset("LD"): "┐", frozenset("RU"): "└", frozenset("LU"): "┘"}
+
+
+def link_path(a, b, side):
+    """Orthogonal connector from window a to window b (b lies on `side` of a)."""
+    if side in "RL":
+        x0 = a.c + a.w if side == "R" else a.c - 1
+        x1 = b.c - 1 if side == "R" else b.c + b.w
+        y0, y1 = a.r + a.h // 2, b.r + b.h // 2
+        xm = (x0 + x1) // 2
+        corners = [(y0, x0), (y0, xm), (y1, xm), (y1, x1)]
+    else:
+        y0 = a.r + a.h if side == "D" else a.r - 1
+        y1 = b.r - 1 if side == "D" else b.r + b.h
+        x0, x1 = a.c + a.w // 2, b.c + b.w // 2
+        ym = (y0 + y1) // 2
+        corners = [(y0, x0), (ym, x0), (ym, x1), (y1, x1)]
+    pts = [corners[0]]
+    for p, q in zip(corners, corners[1:]):
+        dr = (q[0] > p[0]) - (q[0] < p[0])
+        dc = (q[1] > p[1]) - (q[1] < p[1])
+        r, c = p
+        while (r, c) != q:
+            r, c = r + dr, c + dc
+            pts.append((r, c))
+    out = []
+    for i, (r, c) in enumerate(pts):
+        dirs = set()
+        for j in (i - 1, i + 1):
+            if 0 <= j < len(pts):
+                pr, pc = pts[j]
+                dirs.add("U" if pr < r else "D" if pr > r else "L" if pc < c else "R")
+        if len(dirs) == 1:
+            d = next(iter(dirs))
+            dirs.add({"U": "D", "D": "U", "L": "R", "R": "L"}[d])
+        out.append((r, c, CORNER.get(frozenset(dirs), "─")))
+    return out
+
+
+def make_branches(path, depth=2):
+    """Tree-like side branches growing off a connector: (r, c, ch, delay, is_end)."""
+    cells = []
+    if len(path) < 10:
+        return cells
+
+    def grow(r, c, dr, dc, delay, level):
+        ln = random.randint(2, 5 if level == 0 else 3)
+        ch = "│" if dc == 0 else "─"
+        for k in range(1, ln + 1):
+            cells.append((r + dr * k, c + dc * k, ch, delay + k * 0.15, k == ln))
+        er, ec = r + dr * ln, c + dc * ln
+        if level < depth - 1 and random.random() < 0.7:
+            for sd in (-1, 1):
+                if random.random() < 0.75:
+                    grow(er, ec, *((0, sd) if dc == 0 else (sd, 0)), delay + ln * 0.15 + 0.2, level + 1)
+
+    for _ in range(random.randint(3, 6)):
+        i = random.randrange(3, len(path) - 3)
+        r, c, _ch = path[i]
+        horiz = r == path[i - 1][0]
+        d = random.choice((-1, 1))
+        grow(r, c, *((d, 0) if horiz else (0, d)), random.uniform(0, 12), 0)
+    return cells
+
+
+class Link:
+    def __init__(self, a, b, path, t0, line=L_LINE, pulse=L_PULSE, branches=()):
+        self.a, self.b, self.path, self.t0 = a, b, path, t0
+        self.line, self.pulse, self.branches = line, pulse, branches
+
+    def alive(self, now):
+        return now < min(self.a.run_end, self.b.run_end)
+
+    def draw(self, cv, now):
+        if now < self.t0:
+            return
+        n = len(self.path)
+        g = min(1.0, (now - self.t0) / 0.5)
+        for i in range(int(n * g)):
+            r, c, ch = self.path[i]
+            cv.put(r, c, ch, self.line)
+        if g >= 1:
+            age = now - self.t0 - 0.5
+            for r, c, ch, dl, end in self.branches:
+                if age >= dl:
+                    cv.put(r, c, ("◆" if blink(now, 2) else "◇") if end else ch, self.pulse if end else self.line)
+        if g >= 1 and n:
+            head = int((now - self.t0) * 22)
+            for k, h in enumerate((head % (n + 6), n - 1 - (head + n // 2) % (n + 6))):
+                for j in range(4):
+                    idx = h - j if k == 0 else h + j
+                    if 0 <= idx < n:
+                        r, c, ch = self.path[idx]
+                        cv.put(r, c, "◆" if j == 0 else ch, self.pulse)
+
+
+# ---------------------------------------------------------------- scene
+
+
+class Canvas:
+    def __init__(self, h, w):
+        self.h, self.w = h, w
+        self.ch = [[" "] * w for _ in range(h)]
+        self.st = [[RESET] * w for _ in range(h)]
+
+    def put(self, r, c, ch, s):
+        if 0 <= r < self.h and 0 <= c < self.w:
+            self.ch[r][c] = ch
+            self.st[r][c] = s
+
+    def blit(self, buf, r0, c0):
+        for r in range(buf.h):
+            rr = r0 + r
+            if 0 <= rr < self.h:
+                for c in range(buf.w):
+                    cc = c0 + c
+                    if 0 <= cc < self.w:
+                        self.ch[rr][cc] = buf.ch[r][c]
+                        self.st[rr][cc] = buf.st[r][c]
+
+
+class Scene:
+    def __init__(self, w, h, args):
+        self.args = args
+        self.w, self.h = w, h
+        self.C = max(1, w // 3)
+        self.ox = (w - self.C * 3) // 2
+        R, C = h, self.C
+        self.R = R
+        self.tok = [[rt() for _ in range(C)] for _ in range(R)]
+        self.br = [[FLOOR] * C for _ in range(R)]
+        self.scr = [[0] * C for _ in range(R)]
+        self.drops = [self.new_drop(random.uniform(-R, 0)) for _ in range(C)]
+        self.wins, self.links = [], []
+        area = w * h
+        self.cap = {
+            "hack": 0 if args.no_hack else (args.max_hack if args.max_hack is not None
+                                            else min(20, max(2, area // 320))),
+            "sys": 0 if args.no_widgets else (args.max_widgets if args.max_widgets is not None
+                                              else min(12, max(1, area // 600))),
+        }
+        self.reserved, self.deep, self.deep_cool = [], None, 0.0
+        now = time.monotonic()
+        self.next_spawn = {g: now + random.uniform(0.5, 1.5) for g in self.cap}
+        self.glitch = []
+        g = args.glitch_every
+        self.next_glitch = now + random.uniform(g * 0.5, g * 1.5)
+
+    def new_drop(self, y):
+        speed = random.uniform(7, 26) * self.args.speed
+        return [y, speed, speed / random.randint(7, 20)]
+
+    # ---- window management
+
+    def free(self, r, c, h, w):
+        if r < 0 or c < 0 or r + h > self.h or c + w > self.w:
+            return False
+        rects = [(o.r, o.c, o.h, o.w) for o in self.wins] + self.reserved
+        return all(r + h + 1 <= orr or orr + oh + 1 <= r or c + w + 2 <= oc or oc + ow + 2 <= c
+                   for orr, oc, oh, ow in rects)
+
+    def add_win(self, kind, r, c, h, w, now, life=None, level=None):
+        if life is None:
+            life = random.uniform(self.args.min_life, self.args.max_life)
+        chain_at = None
+        if kind.group == "hack" and random.random() < 0.35:
+            chain_at = now + Win.IN + life * random.uniform(0.3, 0.7)
+        win = Win(kind, r, c, h, w, now, life, chain_at, level)
+        self.wins.append(win)
+        return win
+
+    def rand_size(self, kind):
+        (minw, minh), (maxw, maxh) = kind.min_size, kind.max_size
+        maxw, maxh = min(maxw, self.w - 2), min(maxh, self.h - 2)
+        if maxw < minw or maxh < minh:
+            return None
+        return random.randint(minw, maxw), random.randint(minh, maxh)
+
+    def place_adjacent(self, anchor, kind):
+        sides = list("RLDU")
+        random.shuffle(sides)
+        for side in sides:
+            for _ in range(8):
+                size = self.rand_size(kind)
+                if not size:
+                    return None
+                w, h = size
+                if side in "RL":
+                    g = random.randint(3, 7)
+                    c = anchor.c + anchor.w + g if side == "R" else anchor.c - g - w
+                    r = anchor.r + random.randint(-(h - 4), anchor.h - 4)
+                else:
+                    g = random.randint(2, 4)
+                    r = anchor.r + anchor.h + g if side == "D" else anchor.r - g - h
+                    c = anchor.c + random.randint(-(w - 8), anchor.w - 8)
+                if self.free(r, c, h, w):
+                    return r, c, h, w, side
+        return None
+
+    def connect(self, a, b, side, now, handshake=True, deep=False):
+        path = link_path(a, b, side)
+        if deep:
+            P = b.cont.P
+            self.links.append(Link(a, b, path, b.t0 + Win.IN, P.line, P.pulse, make_branches(path)))
+        else:
+            self.links.append(Link(a, b, path, b.t0 + Win.IN))
+        if handshake and sum(1 for w in self.wins if w.kind is HandshakeC) < 2:
+            anchor = random.choice((a, b))
+            pos = self.place_adjacent(anchor, HandshakeC)
+            if pos:
+                hs = self.add_win(HandshakeC, *pos[:4], now)
+                self.connect(anchor, hs, pos[4], now, handshake=False)
+
+    def chain(self, anchor, now):
+        counts = Counter(w.kind for w in self.wins)
+        kinds = [k for k in HACKS if counts[k] < 3]
+        random.shuffle(kinds)
+        for kind in kinds:
+            pos = self.place_adjacent(anchor, kind)
+            if pos:
+                self.connect(anchor, self.add_win(kind, *pos[:4], now), pos[4], now)
+                return
+
+    def start_deep(self, now):
+        """Rare ~200 s event: a chain of 2-5 consecutive windows, each a unique search animation."""
+        n = random.randint(2, 5)
+        plan, anchor = [], None
+        for kind in random.sample(DEEPS, n):
+            if anchor is None:
+                size, pos = self.rand_size(kind), None
+                for _ in range(60 if size else 0):
+                    w, h = size
+                    r, c = random.randint(0, self.h - h), random.randint(0, self.w - w)
+                    if self.free(r, c, h, w):
+                        pos = (r, c, h, w, None)
+                        break
+            else:
+                pos = self.place_adjacent(anchor, kind)
+            if not pos:
+                break
+            self.reserved.append(pos[:4])
+            plan.append({"kind": kind, "pos": pos, "win": None})
+            anchor = SimpleNamespace(r=pos[0], c=pos[1], h=pos[2], w=pos[3])
+        if len(plan) < 2:
+            for p in plan:
+                self.reserved.remove(p["pos"][:4])
+            return False
+        total = self.args.deep_length
+        gap = min(random.uniform(18, 32), max(2.0, (total - 40) / (len(plan) - 1)))
+        for i, p in enumerate(plan):
+            p["t"] = now + i * gap
+            end = now + total - (len(plan) - 1 - i) * random.uniform(3, 7)
+            p["life"] = max(8.0, end - p["t"] - Win.IN - Win.OUT)
+        self.deep = {"plan": plan, "end": now + total}
+        return True
+
+    def spawn(self, group, now):
+        if self.deep is None and now > self.deep_cool and random.randrange(self.args.deep_odds) == 0:
+            if self.start_deep(now):
+                return
+        counts = Counter(w.kind for w in self.wins)
+        kinds = [k for k in (HACKS if group == "hack" else WIDGETS) if counts[k] < (3 if group == "hack" else 2)]
+        random.shuffle(kinds)
+        if group == "hack" and random.random() < 0.3:
+            linked = {id(x) for l in self.links for x in (l.a, l.b)}
+            anchors = [w for w in self.wins if w.group == "hack" and id(w) not in linked
+                       and now - w.t0 > Win.IN and now < w.run_end - 3]
+            random.shuffle(anchors)
+            for anchor in anchors[:1]:
+                for kind in kinds:
+                    pos = self.place_adjacent(anchor, kind)
+                    if pos:
+                        self.connect(anchor, self.add_win(kind, *pos[:4], now), pos[4], now)
+                        return
+        for kind in kinds:
+            size = self.rand_size(kind)
+            if not size:
+                continue
+            for _ in range(30):
+                w, h = size
+                r, c = random.randint(0, self.h - h), random.randint(0, self.w - w)
+                if self.free(r, c, h, w):
+                    self.add_win(kind, r, c, h, w, now)
+                    return
+
+    # ---- simulation
+
+    def step(self, dt, now):
+        R, C = self.R, self.C
+        br, scr, tok = self.br, self.scr, self.tok
+        for c in range(C):
+            d = self.drops[c]
+            y0 = d[0]
+            d[0] += d[1] * dt
+            for r in range(max(0, math.ceil(y0)), min(R, math.ceil(d[0]))):
+                tok[r][c] = rt()
+                br[r][c] = 1.0
+                if random.random() < 0.75:
+                    scr[r][c] = random.randint(3, 7)
+            if d[0] - 24 > R:
+                self.drops[c] = self.new_drop(random.uniform(-R * 0.6, 0))
+            dec = d[2] * dt
+            for r in range(R):
+                b = br[r][c]
+                if b > FLOOR:
+                    br[r][c] = max(FLOOR, b - dec)
+                if scr[r][c]:
+                    scr[r][c] -= 1
+        for _ in range(max(1, R * C // 400)):
+            r, c = random.randrange(R), random.randrange(C)
+            tok[r][c] = rt()
+            br[r][c] = max(br[r][c], 0.4)
+
+        SYS.update(now, any(w.kind is ProcW for w in self.wins))
+
+        self.wins = [w for w in self.wins if not w.done(now)]
+        self.links = [l for l in self.links if l.alive(now) and l.a in self.wins and l.b in self.wins]
+        if self.deep:
+            d = self.deep
+            for i, p in enumerate(d["plan"]):
+                if p["win"] is None and now >= p["t"]:
+                    r, c, h, w, side = p["pos"]
+                    self.reserved.remove((r, c, h, w))
+                    p["win"] = self.add_win(p["kind"], r, c, h, w, now, life=p["life"], level=i)
+                    if i and d["plan"][i - 1]["win"]:
+                        self.connect(d["plan"][i - 1]["win"], p["win"], side, now, handshake=False, deep=True)
+            if now > d["end"] + 1:
+                self.deep, self.reserved, self.deep_cool = None, [], now + 20
+        for w in list(self.wins):
+            if w.chain_at and now >= w.chain_at:
+                w.chain_at = None
+                if now < w.run_end - 2:
+                    self.chain(w, now)
+        for g in self.cap:
+            if now >= self.next_spawn[g]:
+                self.next_spawn[g] = now + random.uniform(0.5, 2.2)
+                if sum(1 for w in self.wins if w.group == g) < self.cap[g]:
+                    self.spawn(g, now)
+
+        if not self.args.no_glitch:
+            self.glitch = [(k, r, c, h, w, f - 1) for k, r, c, h, w, f in self.glitch if f > 1]
+            if now >= self.next_glitch:
+                self.add_glitches()
+                g = self.args.glitch_every
+                self.next_glitch = now + random.uniform(g * 0.5, g * 1.5)
+
+    def add_glitches(self):
+        for _ in range(random.randint(1, 4)):
+            k, f = random.random(), random.randint(2, 6)
+            if k < 0.55:
+                a = random.randrange(self.h)
+                self.glitch.append(("tear", a, 0, random.randint(1, 3),
+                                    random.choice((-6, -5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 6)), f))
+            elif k < 0.85:
+                self.glitch.append(("block", random.randrange(self.h), random.randrange(self.w),
+                                    random.randint(1, 3), random.randint(6, 24), f))
+            else:
+                self.glitch.append(("flash", random.randrange(self.h), 0, 1, 0, min(f, 3)))
+
+    # ---- drawing
+
+    def render(self, now):
+        cv = Canvas(self.h, self.w)
+        tok, br, scr = self.tok, self.br, self.scr
+        for r in range(self.R):
+            for c in range(self.C):
+                v = br[r][c]
+                if scr[r][c]:
+                    s, t = BG_SCR, rs()
+                else:
+                    s = BG_HEAD if v > 0.96 else PALETTE[int(v * (LEVELS - 1))]
+                    t = tok[r][c]
+                x = self.ox + c * 3
+                cv.ch[r][x], cv.ch[r][x + 1] = t[0], t[1]
+                cv.st[r][x] = cv.st[r][x + 1] = s
+        for l in self.links:
+            l.draw(cv, now)
+        for win in self.wins:
+            win.draw(cv, now)
+        for kind, r, c, h, w, _ in self.glitch:
+            rows = range(r, min(self.h, r + h))
+            if kind == "tear":
+                for rr in rows:
+                    cv.ch[rr] = cv.ch[rr][-w:] + cv.ch[rr][:-w]
+                    cv.st[rr] = cv.st[rr][-w:] + cv.st[rr][:-w]
+                    s0 = random.randrange(self.w)
+                    gs = random.choice(GLITCH_STYLES)
+                    for cc in range(s0, min(self.w, s0 + random.randint(10, 40))):
+                        if cv.ch[rr][cc] != " ":
+                            cv.st[rr][cc] = gs
+            elif kind == "block":
+                gs = random.choice(GLITCH_STYLES)
+                for rr in rows:
+                    for cc in range(c, min(self.w, c + w)):
+                        cv.put(rr, cc, random.choice("█▓▒░" + HEX * 2), gs)
+            else:
+                fs = random.choice(FLASH_STYLES)
+                for rr in rows:
+                    for cc in range(self.w):
+                        if cv.ch[rr][cc] != " ":
+                            cv.st[rr][cc] = fs
+        out = ["\x1b[?2026h"]
+        for r in range(self.h):
+            parts = ["\x1b[%d;1H" % (r + 1)]
+            prev = None
+            for ch, s in zip(cv.ch[r], cv.st[r]):
+                if s is not prev:
+                    parts.append(s)
+                    prev = s
+                parts.append(ch)
+            parts.append(RESET)
+            out.append("".join(parts))
+        out.append("\x1b[?2026l")
+        return "".join(out)
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--fps", type=int, default=30)
+    ap.add_argument("--speed", type=float, default=1.0, help="rain speed multiplier")
+    ap.add_argument("--max-hack", type=int, help="max decorative windows (default scales with area, up to 20)")
+    ap.add_argument("--max-widgets", type=int, help="max system widgets (default scales with area, up to 12)")
+    ap.add_argument("--no-hack", action="store_true", help="no decorative windows")
+    ap.add_argument("--no-widgets", action="store_true", help="no system widgets")
+    ap.add_argument("--min-life", type=float, default=5.0)
+    ap.add_argument("--max-life", type=float, default=27.0)
+    ap.add_argument("--no-glitch", action="store_true")
+    ap.add_argument("--glitch-every", type=float, default=3.0, help="average seconds between glitch bursts")
+    ap.add_argument("--deep-odds", type=int, default=250, help="1-in-N chance per spawned window of a deep-search chain")
+    ap.add_argument("--deep-length", type=float, default=200.0, help="deep-search chain duration, seconds")
+    ap.add_argument("--duration", type=float, help="exit after N seconds")
+    args = ap.parse_args()
+
+    fd = sys.stdin.fileno()
+    old = termios.tcgetattr(fd)
+    stop = []
+    signal.signal(signal.SIGTERM, lambda *_: stop.append(1))
+    sys.stdout.write("\x1b[?1049h\x1b[?25l\x1b[?7l\x1b[2J")
+    try:
+        tty.setcbreak(fd)
+        size = tuple(shutil.get_terminal_size())
+        scene = Scene(*size, args)
+        frame = 1.0 / args.fps
+        last = start = time.monotonic()
+        while not stop:
+            now = time.monotonic()
+            if args.duration and now - start > args.duration:
+                break
+            cur = tuple(shutil.get_terminal_size())
+            if cur != size:
+                size = cur
+                scene = Scene(*size, args)
+                sys.stdout.write("\x1b[2J")
+            scene.step(min(now - last, 0.1), now)
+            last = now
+            sys.stdout.write(scene.render(now))
+            sys.stdout.flush()
+            wait = frame - (time.monotonic() - now)
+            if select.select([sys.stdin], [], [], max(0, wait))[0]:
+                if os.read(fd, 16)[:1] in (b"q", b"Q", b"\x1b", b"\x03"):
+                    break
+    except KeyboardInterrupt:
+        pass
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old)
+        sys.stdout.write(RESET + "\x1b[?7h\x1b[?25h\x1b[?1049l")
+        sys.stdout.flush()
+
+
+if __name__ == "__main__":
+    main()

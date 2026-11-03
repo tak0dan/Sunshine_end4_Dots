@@ -1,0 +1,4067 @@
+diff --git a/dots/.config/btop/btop.conf b/dots/.config/btop/btop.conf
+new file mode 100644
+index 00000000..7a50013f
+--- /dev/null
++++ b/dots/.config/btop/btop.conf
+@@ -0,0 +1,286 @@
++#? Config file for btop v.1.4.7
++
++#* Name of a btop++/bpytop/bashtop formatted ".theme" file, "Default" and "TTY" for builtin themes.
++#* Themes should be placed in "../share/btop/themes" relative to binary or "$HOME/.config/btop/themes"
++color_theme = "wallust"
++
++#* If the theme set background should be shown, set to False if you want terminal background transparency.
++theme_background = false
++
++#* Sets if 24-bit truecolor should be used, will convert 24-bit colors to 256 color (6x6x6 color cube) if false.
++truecolor = true
++
++#* Set to true to force tty mode regardless if a real tty has been detected or not.
++#* Will force 16-color mode and TTY theme, set all graph symbols to "tty" and swap out other non tty friendly symbols.
++force_tty = false
++
++#* Option to disable presets. Either the default preset, custom presets, or all presets.
++#* "Off" All presets are enabled.
++#* "Default" preset is disabled.#* "Custom" presets are disabled.#* "All" presets are disabled.
++disable_presets = "Off"
++
++#* Define presets for the layout of the boxes. Preset 0 is always all boxes shown with default settings. Max 9 presets.
++#* Format: "box_name:P:G,box_name:P:G" P=(0 or 1) for alternate positions, G=graph symbol to use for box.
++#* Use whitespace " " as separator between different presets.
++#* Example: "cpu:0:default,mem:0:tty,proc:1:default cpu:0:braille,proc:0:tty"
++presets = "cpu:1:default,proc:0:default cpu:0:default,mem:0:default,net:0:default cpu:0:block,net:0:tty"
++
++#* Set to True to enable "h,j,k,l,g,G" keys for directional control in lists.
++#* Conflicting keys for h:"help" and k:"kill" is accessible while holding shift.
++vim_keys = false
++
++#* Disable all mouse events.
++disable_mouse = false
++
++#* Rounded corners on boxes, is ignored if TTY mode is ON.
++rounded_corners = true
++
++#* Use terminal synchronized output sequences to reduce flickering on supported terminals.
++terminal_sync = true
++
++#* Default symbols to use for graph creation, "braille", "block" or "tty".
++#* "braille" offers the highest resolution but might not be included in all fonts.
++#* "block" has half the resolution of braille but uses more common characters.
++#* "tty" uses only 3 different symbols but will work with most fonts and should work in a real TTY.
++#* Note that "tty" only has half the horizontal resolution of the other two, so will show a shorter historical view.
++graph_symbol = "braille"
++
++# Graph symbol to use for graphs in cpu box, "default", "braille", "block" or "tty".
++graph_symbol_cpu = "default"
++
++# Graph symbol to use for graphs in gpu box, "default", "braille", "block" or "tty".
++graph_symbol_gpu = "default"
++
++# Graph symbol to use for graphs in cpu box, "default", "braille", "block" or "tty".
++graph_symbol_mem = "default"
++
++# Graph symbol to use for graphs in cpu box, "default", "braille", "block" or "tty".
++graph_symbol_net = "default"
++
++# Graph symbol to use for graphs in cpu box, "default", "braille", "block" or "tty".
++graph_symbol_proc = "default"
++
++#* Manually set which boxes to show. Available values are "cpu mem net proc" and "gpu0" through "gpu5", separate values with whitespace.
++shown_boxes = "cpu mem net proc"
++
++#* Update time in milliseconds, recommended 2000 ms or above for better sample times for graphs.
++update_ms = 100
++
++#* Processes sorting, "pid" "program" "arguments" "threads" "user" "memory" "cpu lazy" "cpu direct",
++#* "cpu lazy" sorts top process over time (easier to follow), "cpu direct" updates top process directly.
++proc_sorting = "cpu lazy"
++
++#* Reverse sorting order, True or False.
++proc_reversed = false
++
++#* Show processes as a tree.
++proc_tree = false
++
++#* Use the cpu graph colors in the process list.
++proc_colors = true
++
++#* Use a darkening gradient in the process list.
++proc_gradient = true
++
++#* If process cpu usage should be of the core it's running on or usage of the total available cpu power.
++proc_per_core = false
++
++#* Show process memory as bytes instead of percent.
++proc_mem_bytes = true
++
++#* Show cpu graph for each process.
++proc_cpu_graphs = true
++
++#* Use /proc/[pid]/smaps for memory information in the process info box (very slow but more accurate)
++proc_info_smaps = false
++
++#* Show proc box on left side of screen instead of right.
++proc_left = false
++
++#* (Linux) Filter processes tied to the Linux kernel(similar behavior to htop).
++proc_filter_kernel = false
++
++#* Should the process list follow the selected process when detailed view is open.
++proc_follow_detailed = true
++
++#* In tree-view, always accumulate child process resources in the parent process.
++proc_aggregate = false
++
++#* Should cpu and memory usage display be preserved for dead processes when paused.
++keep_dead_proc_usage = false
++
++#* Sets the CPU stat shown in upper half of the CPU graph, "total" is always available.
++#* Select from a list of detected attributes from the options menu.
++cpu_graph_upper = "Auto"
++
++#* Sets the CPU stat shown in lower half of the CPU graph, "total" is always available.
++#* Select from a list of detected attributes from the options menu.
++cpu_graph_lower = "Auto"
++
++#* If gpu info should be shown in the cpu box. Available values = "Auto", "On" and "Off".
++show_gpu_info = "Auto"
++
++#* Toggles if the lower CPU graph should be inverted.
++cpu_invert_lower = true
++
++#* Set to True to completely disable the lower CPU graph.
++cpu_single_graph = false
++
++#* Show cpu box at bottom of screen instead of top.
++cpu_bottom = false
++
++#* Shows the system uptime in the CPU box.
++show_uptime = true
++
++#* Shows the CPU package current power consumption in watts. Requires running `make setcap` or `make setuid` or running with sudo.
++show_cpu_watts = true
++
++#* Show cpu temperature.
++check_temp = true
++
++#* Which sensor to use for cpu temperature, use options menu to select from list of available sensors.
++cpu_sensor = "Auto"
++
++#* Show temperatures for cpu cores also if check_temp is True and sensors has been found.
++show_coretemp = true
++
++#* Set a custom mapping between core and coretemp, can be needed on certain cpus to get correct temperature for correct core.
++#* Use lm-sensors or similar to see which cores are reporting temperatures on your machine.
++#* Format "x:y" x=core with wrong temp, y=core with correct temp, use space as separator between multiple entries.
++#* Example: "4:0 5:1 6:3"
++cpu_core_map = ""
++
++#* Which temperature scale to use, available values: "celsius", "fahrenheit", "kelvin" and "rankine".
++temp_scale = "celsius"
++
++#* Use base 10 for bits/bytes sizes, KB = 1000 instead of KiB = 1024.
++base_10_sizes = false
++
++#* Show CPU frequency.
++show_cpu_freq = true
++
++#* How to calculate CPU frequency, available values: "first", "range", "lowest", "highest" and "average".
++freq_mode = "first"
++
++#* Draw a clock at top of screen, formatting according to strftime, empty string to disable.
++#* Special formatting: /host = hostname | /user = username | /uptime = system uptime
++clock_format = "%X"
++
++#* Update main ui in background when menus are showing, set this to false if the menus is flickering too much for comfort.
++background_update = true
++
++#* Custom cpu model name, empty string to disable.
++custom_cpu_name = ""
++
++#* Optional filter for shown disks, should be full path of a mountpoint, separate multiple values with whitespace " ".
++#* Only disks matching the filter will be shown. Prepend exclude= to only show disks not matching the filter. Examples: disk_filter="/boot /home/user", disks_filter="exclude=/boot /home/user"
++disks_filter = ""
++
++#* Show graphs instead of meters for memory values.
++mem_graphs = true
++
++#* Show mem box below net box instead of above.
++mem_below_net = false
++
++#* Count ZFS ARC in cached and available memory.
++zfs_arc_cached = true
++
++#* If swap memory should be shown in memory box.
++show_swap = true
++
++#* Show swap as a disk, ignores show_swap value above, inserts itself after first disk.
++swap_disk = true
++
++#* If mem box should be split to also show disks info.
++show_disks = true
++
++#* Filter out non physical disks. Set this to False to include network disks, RAM disks and similar.
++only_physical = true
++
++#* Read disks list from /etc/fstab. This also disables only_physical.
++use_fstab = true
++
++#* Setting this to True will hide all datasets, and only show ZFS pools. (IO stats will be calculated per-pool)
++zfs_hide_datasets = false
++
++#* Set to true to show available disk space for privileged users.
++disk_free_priv = false
++
++#* Toggles if io activity % (disk busy time) should be shown in regular disk usage view.
++show_io_stat = true
++
++#* Toggles io mode for disks, showing big graphs for disk read/write speeds.
++io_mode = false
++
++#* Set to True to show combined read/write io graphs in io mode.
++io_graph_combined = false
++
++#* Set the top speed for the io graphs in MiB/s (100 by default), use format "mountpoint:speed" separate disks with whitespace " ".
++#* Example: "/mnt/media:100 /:20 /boot:1".
++io_graph_speeds = ""
++
++#* Swap the positions of the upload and download speed graphs. When true, upload will be on top.
++swap_upload_download = false
++
++#* Set fixed values for network graphs in Mebibits. Is only used if net_auto is also set to False.
++net_download = 100
++
++net_upload = 100
++
++#* Use network graphs auto rescaling mode, ignores any values set above and rescales down to 10 Kibibytes at the lowest.
++net_auto = true
++
++#* Sync the auto scaling for download and upload to whichever currently has the highest scale.
++net_sync = true
++
++#* Starts with the Network Interface specified here.
++net_iface = ""
++
++#* "True" shows bitrates in base 10 (Kbps, Mbps). "False" shows bitrates in binary sizes (Kibps, Mibps, etc.). "Auto" uses base_10_sizes.
++base_10_bitrate = "Auto"
++
++#* Show battery stats in top right if battery is present.
++show_battery = true
++
++#* Which battery to use if multiple are present. "Auto" for auto detection.
++selected_battery = "Auto"
++
++#* Show power stats of battery next to charge indicator.
++show_battery_watts = true
++
++#* Set loglevel for "~/.local/state/btop.log" levels are: "ERROR" "WARNING" "INFO" "DEBUG".
++#* The level set includes all lower levels, i.e. "DEBUG" will show all logging info.
++log_level = "WARNING"
++
++#* Automatically save current settings to config file on exit.
++save_config_on_exit = true
++
++#* Measure PCIe throughput on NVIDIA cards, may impact performance on certain cards.
++nvml_measure_pcie_speeds = true
++
++#* Measure PCIe throughput on AMD cards, may impact performance on certain cards.
++rsmi_measure_pcie_speeds = true
++
++#* Horizontally mirror the GPU graph.
++gpu_mirror_graph = true
++
++#* Set which GPU vendors to show. Available values are "nvidia amd intel apple"
++shown_gpus = "nvidia amd intel apple"
++
++#* Custom gpu0 model name, empty string to disable.
++custom_gpu_name0 = ""
++
++#* Custom gpu1 model name, empty string to disable.
++custom_gpu_name1 = ""
++
++#* Custom gpu2 model name, empty string to disable.
++custom_gpu_name2 = ""
++
++#* Custom gpu3 model name, empty string to disable.
++custom_gpu_name3 = ""
++
++#* Custom gpu4 model name, empty string to disable.
++custom_gpu_name4 = ""
++
++#* Custom gpu5 model name, empty string to disable.
++custom_gpu_name5 = ""
+diff --git a/dots/.config/darklyrc b/dots/.config/darklyrc
+old mode 100644
+new mode 100755
+index 8df1f372..799b9506
+--- a/dots/.config/darklyrc
++++ b/dots/.config/darklyrc
+@@ -1,2 +1,5 @@
+ [Style]
+ WidgetDrawShadow=false
++# 30% transparent backgrounds, text/icons stay fully opaque.
++DolphinViewOpacity=80
++DolphinSidebarOpacity=80
+diff --git a/dots/.config/dolphinrc b/dots/.config/dolphinrc
+old mode 100644
+new mode 100755
+index 013107ce..023384cc
+--- a/dots/.config/dolphinrc
++++ b/dots/.config/dolphinrc
+@@ -1,6 +1,9 @@
+ [DetailsMode]
+ PreviewSize=32
+ 
++[FoldersPanel]
++HiddenFilesShown=true
++
+ [General]
+ GlobalViewProps=false
+ ShowFullPath=true
+diff --git a/dots/.config/fastfetch/SUN_colored.txt b/dots/.config/fastfetch/SUN_colored.txt
+new file mode 100644
+index 00000000..2ab97471
+--- /dev/null
++++ b/dots/.config/fastfetch/SUN_colored.txt
+@@ -0,0 +1,26 @@
++[0m                     [0m[38;2;255;165;0m+[0m                        [0m
++[0m                     [0m[38;2;255;165;0m-/[0m         [0m[38;2;255;165;0m,[0m             [0m
++[0m                   [0m[38;2;255;165;0m,#[0m      [0m[38;2;255;165;0m%##[0m                [0m
++[0m             [0m[38;2;255;165;0m,[0m       [0m[38;2;255;165;0m##[0m    [0m[38;2;255;165;0m#[0m[38;2;255;255;0m#[0m                 [0m
++[0m             [0m[38;2;255;165;0m#/[0m      [0m[38;2;255;255;0m#[0m[38;2;255;165;0m#[0m    [0m[38;2;255;165;0m#[0m[38;2;255;255;0m#[0m                 [0m
++[0m     [0m[38;2;255;165;0m%[0m       [0m[38;2;255;165;0m#####[0m   [0m[38;2;255;255;0m#[0m[38;2;255;165;0m#--[0m [0m[38;2;255;165;0m:#[0m[38;2;255;255;0m#[0m     [0m[38;2;255;165;0m-#####[0m      [0m
++[0m      [0m[38;2;255;165;0m##/.,-[0m   [0m[38;2;255;165;0m#[0m[38;2;255;255;0m#[0m[38;2;255;165;0m##/,##.-:##[0m[38;2;255;255;0m#[0m   [0m[38;2;255;165;0m###=[0m          [0m
++[0m      [0m[38;2;255;165;0m#######[0m  [0m[38;2;255;165;0m##[0m          [0m[38;2;255;165;0m.%+#####[0m           [0m
++[0m           [0m[38;2;255;165;0m###;[0m              [0m[38;2;255;165;0m.##[0m[38;2;255;255;0m;[0m             [0m
++[0m            [0m[38;2;255;165;0m#/[0m                 [0m[38;2;255;165;0m,#[0m             [0m
++[0m           [0m[38;2;255;165;0m#%[0m                   [0m[38;2;255;165;0m###:######%=[0m  [0m
++[0m  [0m[38;2;255;165;0m-######[0m[38;2;255;255;0m##[0m[38;2;255;165;0m&[0m                     [0m[38;2;255;165;0m##/::[0m        [0m
++[0m   [0m[38;2;255;165;0m.####:/#%[0m                     [0m[38;2;255;165;0m/[0m            [0m
++[0m           [0m[38;2;255;165;0m#[0m                     [0m[38;2;255;165;0m#/[0m  [0m[38;2;255;165;0m,-[0m       [0m
++[0m          [0m[38;2;255;165;0m/##[0m                   [0m[38;2;255;165;0m&######%[0m      [0m
++[0m        [0m[38;2;255;165;0m#####\[0m                 [0m[38;2;255;165;0m#[0m        [0m[38;2;255;165;0m=##-[0m  [0m
++[0m [0m[38;2;255;165;0m.+######%[0m  [0m[38;2;255;165;0m.##\.[0m            [0m[38;2;255;165;0m-/###[0m            [0m
++[0m     [0m[38;2;255;165;0m=/-[0m   [0m[38;2;255;165;0m==[0m[38;2;255;255;0m##+[0m[38;2;255;165;0m+=.[0m       [0m[38;2;255;165;0m_,#[0m [0m[38;2;255;165;0m%#[0m[38;2;255;255;0m#[0m[38;2;255;165;0m#==[0m          [0m
++[0m            [0m[38;2;255;165;0m#[0m[38;2;255;255;0m#[0m[38;2;255;165;0m##%[0m [0m[38;2;255;165;0m##########[0m   [0m[38;2;255;165;0m+####=[0m         [0m
++[0m           [0m[38;2;255;165;0m.##.[0m   [0m[38;2;255;165;0m#[0m[38;2;255;255;0m##[0m   [0m[38;2;255;165;0m/[0m[38;2;255;255;0m##[0m[38;2;255;165;0m#,[0m      [0m[38;2;255;165;0m,#[0m         [0m
++[0m          [0m[38;2;255;165;0m-##=[0m    [0m[38;2;255;165;0m#[0m[38;2;255;255;0m##[0m    [0m[38;2;255;165;0m%##+[0m       [0m[38;2;255;165;0m#[0m         [0m
++[0m        [0m[38;2;255;165;0m;:[0m        [0m[38;2;255;165;0m;[0m[38;2;255;255;0m##[0m[38;2;255;165;0m#=[0m    [0m[38;2;255;165;0m##[0m        [0m[38;2;255;165;0m.[0m        [0m
++[0m                 [0m[38;2;255;165;0m.###[0m     [0m[38;2;255;165;0m+##[0m                 [0m
++[0m                 [0m[38;2;255;165;0m#[0m[38;2;255;255;0m#[0m[38;2;255;165;0m#[0m      [0m[38;2;255;165;0m,..[0m                 [0m
++[0m                 [0m[38;2;255;165;0m#.[0m                           [0m
++[0m                [0m[38;2;255;165;0m-[0m                             [0m
+diff --git a/dots/.config/fastfetch/config.jsonc b/dots/.config/fastfetch/config.jsonc
+new file mode 100644
+index 00000000..eb86432d
+--- /dev/null
++++ b/dots/.config/fastfetch/config.jsonc
+@@ -0,0 +1,54 @@
++{
++    "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
++    "logo": {
++        "type": "raw",
++        "source": "~/.config/fastfetch/SUN_colored.txt",
++        // fastfetch auto-detects width 0 for raw logos containing ANSI colour
++        // escapes, which makes the info column overlap the art. The SUN art
++        // is exactly 46 columns wide, so state it explicitly.
++        "width": 46,
++        "padding": { "right": 2 }
++    },
++    "modules": [
++        "title",
++        "separator",
++        "os",
++        "host",
++        "kernel",
++        "bootmgr",
++        "uptime",
++        "packages",
++        "shell",
++        "display",
++        "de",
++        "wm",
++        "wmtheme",
++        "theme",
++        "icons",
++        "font",
++        "cursor",
++        "terminal",
++        "cpu",
++        "gpu",
++        "memory",
++        "swap",
++        { "type": "disk", "folders": "/" },
++        "localip",
++        "wifi",
++        "bluetooth",
++        "battery",
++        "poweradapter",
++        "brightness",
++        "sound",
++        "locale",
++        "datetime",
++        "colors",
++        {
++            "type": "command",
++            "key": " ",
++            "text": "$HOME/.config/fastfetch/custom-info.sh",
++            "splitLines": true
++        },
++        "break"
++    ]
++}
+diff --git a/dots/.config/fastfetch/custom-info.json b/dots/.config/fastfetch/custom-info.json
+new file mode 100644
+index 00000000..39a526b0
+--- /dev/null
++++ b/dots/.config/fastfetch/custom-info.json
+@@ -0,0 +1,10 @@
++{
++  "entries": [
++    {
++      "title": "Running Linux",
++      "since": "2024-01-01",
++      "units": ["years", "months"],
++      "mode": "combined"
++    }
++  ]
++}
+diff --git a/dots/.config/fastfetch/custom-info.sh b/dots/.config/fastfetch/custom-info.sh
+new file mode 100755
+index 00000000..6f4c1ed4
+--- /dev/null
++++ b/dots/.config/fastfetch/custom-info.sh
+@@ -0,0 +1,142 @@
++#!/usr/bin/env bash
++
++color() {
++    local code="$1"
++    shift
++    printf '\033[%sm%s\033[0m' "$code" "$*"
++}
++
++SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
++JSON="$HOME/.config/fastfetch/from_tak_0/custom-info.json"
++if [[ ! -f "$JSON" ]]; then
++    JSON="${SCRIPT_DIR}/custom-info.json"
++fi
++
++if [[ ! -f "$JSON" ]]; then
++    printf '%s\n' "$(color "35" "│ └󰅙 Missing custom-info.json")"
++    exit 1
++fi
++
++# Parse JSON and compute durations using Python (no jq dependency).
++# Each entry may set:
++#   "units": any of years, months, weeks, days, hours, minutes
++#            (default: ["years", "months"])
++#   "mode":  "combined" -> one line, units break the span down
++#                          (e.g. "2 years 7 months")
++#            "total"    -> one line per unit, each the whole span in that unit
++#                          (e.g. "6 months", "193 days", "278123 minutes")
++# Output per entry: title|since|line1<TAB>line2...
++mapfile -t entries < <(python3 - "$JSON" <<'PY'
++import json, sys
++from datetime import datetime
++
++ORDER = ["years", "months", "weeks", "days", "hours", "minutes"]
++SECONDS = {"weeks": 604800, "days": 86400, "hours": 3600, "minutes": 60}
++
++def plural(n, unit):
++    return f"{n} {unit[:-1] if n == 1 else unit}"
++
++def add_months(dt, n):
++    y, m = divmod(dt.month - 1 + n, 12)
++    y += dt.year
++    m += 1
++    # Clamp day for short months (e.g. Jan 31 + 1 month -> Feb 28)
++    for d in range(dt.day, 0, -1):
++        try:
++            return dt.replace(year=y, month=m, day=d)
++        except ValueError:
++            pass
++
++def whole_months(start, now):
++    n = (now.year - start.year) * 12 + now.month - start.month
++    if add_months(start, n) > now:
++        n -= 1
++    return max(n, 0)
++
++def total(start, now, unit):
++    if unit == "years":
++        return whole_months(start, now) // 12
++    if unit == "months":
++        return whole_months(start, now)
++    return int((now - start).total_seconds()) // SECONDS[unit]
++
++def combined(start, now, units):
++    parts, cursor = [], start
++    for unit in [u for u in ORDER if u in units]:
++        if unit in ("years", "months"):
++            n = whole_months(cursor, now)
++            if unit == "years":
++                n //= 12
++                cursor = add_months(cursor, n * 12)
++            else:
++                cursor = add_months(cursor, n)
++        else:
++            n = int((now - cursor).total_seconds()) // SECONDS[unit]
++            cursor = datetime.fromtimestamp(cursor.timestamp() + n * SECONDS[unit])
++        if n:
++            parts.append(plural(n, unit))
++    if not parts:
++        smallest = [u for u in ORDER if u in units][-1]
++        parts.append(plural(0, smallest))
++    return " ".join(parts)
++
++try:
++    with open(sys.argv[1]) as f:
++        data = json.load(f)
++except Exception as e:
++    sys.exit(f"ERROR: {e}")
++
++now = datetime.now()
++for entry in data.get("entries", []):
++    title = entry.get("title", "")
++    since = entry.get("since", "")
++    units = [u for u in entry.get("units", ["years", "months"]) if u in ORDER] or ["years", "months"]
++    mode = entry.get("mode", "combined")
++    try:
++        start = datetime.fromisoformat(since)
++        if mode == "total":
++            lines = [plural(total(start, now, u), u) for u in units]
++        else:
++            lines = [combined(start, now, units)]
++    except ValueError:
++        lines = ["invalid date"]
++    print(f"{title}|{since}|" + "\t".join(lines))
++PY
++)
++
++if [[ ${#entries[@]} -eq 0 ]]; then
++    printf '%s\n' "$(color "35" "│ └󰅙 No entries found")"
++    exit 0
++fi
++
++for index in "${!entries[@]}"; do
++    line="${entries[$index]}"
++    IFS='|' read -r title since durations <<< "$line"
++
++    [[ -z "$title" || -z "$since" ]] && continue
++
++    IFS=$'\t' read -r -a lines <<< "$durations"
++
++    branch="├"
++    detail_prefix="│"
++    if (( index == ${#entries[@]} - 1 )); then
++        branch="└"
++        detail_prefix=" "
++    fi
++
++    # First entry is always rose; the rest cycle through the terminal's own
++    # palette so they follow whatever colour scheme is active.
++    if (( index == 0 )); then
++        title_color="38;2;255;102;153"
++    else
++        palette=(34 36 32 33 35)
++        title_color="${palette[(index - 1) % ${#palette[@]}]}"
++    fi
++
++    printf '%s %s\n' "$(color "$title_color" "│ ${branch}󰃭 $title")" "$(color "90" "(since $since)")"
++    for i in "${!lines[@]}"; do
++        sub="├"
++        (( i == ${#lines[@]} - 1 )) && sub="└"
++        printf '%s\n' "$(color "90" "│ ${detail_prefix} ${sub}${lines[$i]}")"
++    done
++done
+diff --git a/dots/.config/fish/config.fish b/dots/.config/fish/config.fish
+index a4481fd6..be18b17d 100755
+--- a/dots/.config/fish/config.fish
++++ b/dots/.config/fish/config.fish
+@@ -11,12 +11,21 @@ if status is-interactive
+         starship init fish | source
+         enable_transience
+     end
+-    
++
++    # Fastfetch on every open
++    fastfetch
++
+     # Colors
++    # Strip the "[100]" alpha prefix from the background sequence (OSC 11) so
++    # it doesn't force the terminal opaque; foot's alpha in foot.ini applies.
+     if test -f ~/.local/state/quickshell/user/generated/terminal/sequences.txt
+-        cat ~/.local/state/quickshell/user/generated/terminal/sequences.txt
++        sed 's/\]11;\[[0-9]*\]/]11;/' ~/.local/state/quickshell/user/generated/terminal/sequences.txt
+     end
+ 
++    # Paste from the Wayland clipboard with Ctrl+V.
++    # Ctrl+Shift+V is handled by foot itself (terminal-level paste).
++    bind \cv fish_clipboard_paste
++
+     # Aliases
+     # kitty doesn't clear properly so we need to do this weird printing
+     alias clear "printf '\033[2J\033[3J\033[1;1H'"
+@@ -31,3 +40,4 @@ if status is-interactive
+         alias ssh 'kitten ssh'
+     end
+ end
++fish_add_path $HOME/.local/bin
+diff --git a/dots/.config/foot/foot.ini b/dots/.config/foot/foot.ini
+index 8211dcdf..519912e1 100644
+--- a/dots/.config/foot/foot.ini
++++ b/dots/.config/foot/foot.ini
+@@ -23,8 +23,11 @@ beam-thickness=1.5
+ [key-bindings]
+ scrollback-up-page=Page_Up
+ scrollback-down-page=Page_Down
+-clipboard-copy=Control+c
+-clipboard-paste=Control+v
++# Ctrl+C must stay foot's default `cancel` (SIGINT): the classic keybind.
++# Copy is the default Control+Shift+c.
++# Keep the default Ctrl+Shift+v here and leave Ctrl+v to the application, so
++# fish can bind it to paste while vim etc. still see Ctrl+v as usual.
++clipboard-paste=Control+Shift+v XF86Paste
+ # primary-paste=Shift+Insert
+ search-start=Control+f
+ font-increase=Control+plus Control+equal Control+KP_Add
+@@ -37,5 +40,7 @@ find-prev=Shift+F3
+ find-next=F3 Control+G
+ delete-prev-word=Control+BackSpace
+ 
+-[text-bindings]
+-\x03=Control+Shift+c
++[colors-dark]
++# 20% transparent background (0.8 = 80% opaque).
++# The alpha option is a color option, so it belongs in the colors-* sections.
++alpha=0.8
+diff --git a/dots/.config/hypr/hyprland/execs.lua b/dots/.config/hypr/hyprland/execs.lua
+index 23f76682..b91f3922 100644
+--- a/dots/.config/hypr/hyprland/execs.lua
++++ b/dots/.config/hypr/hyprland/execs.lua
+@@ -1,4 +1,48 @@
+ -- put former exec-once commands inside the func and former exec commands outside
++
++-- The default apps (terminal, browser) from variables.lua, or the user's
++-- overrides in custom/variables.lua
++require("hyprland.lib")
++require("hyprland.variables")
++if is_file_exists(HOME .. "/.config/hypr/custom/variables.lua") then
++    require("custom.variables")
++end
++
++local function on_path(bin)
++    for dir in (os.getenv("PATH") or ""):gmatch("[^:]+") do
++        local f = io.open(dir .. "/" .. bin, "r")
++        if f then
++            f:close()
++            return true
++        end
++    end
++    return false
++end
++
++-- The first installed app of a launch_first_available list ('foot' 'kitty -1'
++-- ...), or the value itself if it is a plain command (custom override).
++-- Startup apps are started directly, not through launch_first_available.sh:
++-- that script detaches the app and exits, so Hyprland could not tie the
++-- window to the workspace it was started for.
++local function first_available(list)
++    local found = false
++    for cand in list:gmatch("'([^']*)'") do
++        found = true
++        if on_path(cand:match("^(%S+)")) then
++            return cand
++        end
++    end
++    return not found and list or nil
++end
++
++-- A terminal command running `cmd`, in the form that terminal expects
++local exec_flag = { alacritty = "-e", konsole = "-e", kgx = "-e", xterm = "-e", uxterm = "-e",
++                    wezterm = "start --" }
++local function running(term, cmd)
++    local flag = exec_flag[term:match("^(%S+)")]
++    return term .. " " .. (flag and (flag .. " ") or "") .. cmd
++end
++
+ hl.on("hyprland.start", function ()
+ 
+     -- Bar, wallpaper
+@@ -6,6 +50,17 @@ hl.on("hyprland.start", function ()
+     hl.exec_cmd("qs -c $qsConfig")
+     hl.exec_cmd("$HOME/.config/hypr/custom/scripts/__restore_video_wallpaper.sh")
+ 
++    -- Startup apps: the default terminal running cpmatrix on workspace 1 and
++    -- the default browser on workspace 2. Each is placed on its workspace at
++    -- launch only, so windows opened later go to the current workspace.
++    local term, web = first_available(terminal), first_available(browser)
++    if term then
++        hl.exec_cmd(running(term, "$HOME/.local/bin/cpmatrix"), { workspace = 1 })
++    end
++    if web then
++        hl.exec_cmd(web, { workspace = 2 })
++    end
++
+     -- Core components (authentication, lock screen, notification daemon)
+     hl.exec_cmd("gnome-keyring-daemon --start --components=secrets")
+     hl.exec_cmd("hypridle")
+diff --git a/dots/.config/hypr/hyprland/general.lua b/dots/.config/hypr/hyprland/general.lua
+index b6764a8b..01462db1 100644
+--- a/dots/.config/hypr/hyprland/general.lua
++++ b/dots/.config/hypr/hyprland/general.lua
+@@ -254,7 +254,10 @@ hl.animation({
+ 
+ hl.config({
+     input = {
+-        kb_layout = "us",
++        -- Multiple keyboard layouts. Hyprland cannot switch layouts per window
++        -- by itself, so the switching itself is done by the
++        -- scripts/Tak0-Per-Window-Switch.py daemon (see keybinds.lua).
++        kb_layout = "us,es,ua",
+         numlock_by_default = true,
+         repeat_delay = 250,
+         repeat_rate = 35,
+@@ -284,12 +287,21 @@ hl.config({
+         allow_session_lock_restore = true,
+         session_lock_xray = true,
+         initial_workspace_tracking = false,
+-        focus_on_activate = true
++        -- Do not yank the focus to an app that requests activation. Telegram
++        -- does this on every incoming notification ("draw attention"), and
++        -- browsers do it when they open a tab/link in the background.
++        -- The window is marked urgent instead, so you stay where you are.
++        focus_on_activate = false
+     },
+ 
+     binds = {
+         scroll_event_delay = 0,
+         hide_special_on_workspace_change = true
++        -- NOTE: the "press the key of the workspace you are already on ->
++        -- go to the previous workspace" toggle is implemented in keybinds.lua
++        -- (see focus_workspace), NOT via binds:workspace_back_and_forth.
++        -- The number keys are bound more than once, so the native option would
++        -- fire twice per press and toggle straight back (blinking).
+     },
+ 
+     cursor = {
+diff --git a/dots/.config/hypr/hyprland/keybinds.lua b/dots/.config/hypr/hyprland/keybinds.lua
+index d54d25bd..857bf589 100644
+--- a/dots/.config/hypr/hyprland/keybinds.lua
++++ b/dots/.config/hypr/hyprland/keybinds.lua
+@@ -25,7 +25,6 @@ hl.bind("SUPER + V", hl.dsp.global("quickshell:overviewClipboardToggle"))
+ hl.bind("SUPER + Period", hl.dsp.global("quickshell:overviewEmojiToggle"))
+ hl.bind("SUPER + A", hl.dsp.global("quickshell:sidebarLeftToggle"), { description = "Shell: Toggle left sidebar" })
+ hl.bind("SUPER + ALT + A", hl.dsp.global("quickshell:sidebarLeftToggleDetach"))
+-hl.bind("SUPER + B", hl.dsp.global("quickshell:sidebarLeftToggle"))
+ hl.bind("SUPER + O", hl.dsp.global("quickshell:sidebarLeftToggle"))
+ hl.bind("SUPER + N", hl.dsp.global("quickshell:sidebarRightToggle"), { description = "Shell: Toggle right sidebar" })
+ hl.bind("SUPER + Slash", hl.dsp.global("quickshell:cheatsheetToggle"), { description = "Shell: Toggle cheatsheet" })
+@@ -79,9 +78,8 @@ hl.bind("SUPER + SHIFT + X", hl.dsp.exec_cmd(
+     qsIsAlive ..
+     " || pidof slurp || grim -g \"$(slurp $SLURP_ARGS)\" \"/tmp/ocr_image.png\" && tesseract \"/tmp/ocr_image.png\" stdout -l $(tesseract --list-langs | awk 'NR>1{print $1}' | tr '\\\\n' '+' | sed 's/\\\\+$/\\\\n/') | wl-copy && rm \"/tmp/ocr_image.png\""
+ ))
+---# Color picker
+-hl.bind("SUPER + SHIFT + C", hl.dsp.exec_cmd("hyprpicker -a"),
+-    { description = "Utilities: Pick color #RRGGBB >> clipboard" })
++-- Picking a color is available through the color scheme widgets of other
++-- applications; this keybind is reserved for killing the active window.
+ --# Recording stuff
+ hl.bind("SUPER + SHIFT + R", hl.dsp.global("quickshell:regionRecord"),
+     { locked = true, description = "Utilities: Record region (no sound)" })
+@@ -164,28 +162,48 @@ for i = 1, 2 do
+     local focusdir = { "l", "r" }
+     hl.bind("SUPER + " .. arrowkey[i], hl.dsp.focus({ direction = focusdir[i] }))
+ end
+---#/# bind = SUPER + SHIFT, ←/↑/→/↓,, -- Move in direction
++--#/# bind = SUPER + ALT, ←/↑/→/↓,, -- Move window in direction
+ for i = 1, 4 do
+     local arrowkey = { "Left", "Right", "Up", "Down" }
+     local focusdir = { "l", "r", "u", "d" }
+-    hl.bind("SUPER + SHIFT + " .. arrowkey[i], hl.dsp.window.move({ direction = focusdir[i] }),
++    hl.bind("SUPER + ALT + " .. arrowkey[i], hl.dsp.window.move({ direction = focusdir[i] }),
+         { description = "Window: Move " .. arrowkey[i] })
+ end
+ 
++--#/# bind = SUPER + SHIFT, ←/↑/→/↓,, -- Resize window (grow/shrink in that direction)
++-- NOTE: `relative = true` is required -- without it the Lua dispatcher rejects
++-- the size table ("Invalid size") and nothing happens.
++for i = 1, 4 do
++    local arrowkey = { "Left", "Right", "Up", "Down" }
++    local delta = { { -60, 0 }, { 60, 0 }, { 0, -60 }, { 0, 60 } }
++    hl.bind("SUPER + SHIFT + " .. arrowkey[i],
++        hl.dsp.window.resize({ x = delta[i][1], y = delta[i][2], relative = true }),
++        { repeating = true, description = "Window: Resize " .. arrowkey[i] })
++end
++
+ hl.bind("ALT + F4",
+     function()
+         hl.exec_cmd(
+-            "notify-send \"Wrong close keybind\" \"Super+Q to close. Use Alt+F4 for Windows VMs\" -a Hyprland")
++            "notify-send \"Wrong close keybind\" \"Super+Q to open a console. Use Alt+F4 for Windows VMs\" -a Hyprland")
+     end,
+     { non_consuming = true })
+-hl.bind("SUPER + Q", hl.dsp.window.close(), { description = "Window: Close" })
+-hl.bind("SUPER + SHIFT + ALT + Q", hl.dsp.exec_cmd("hyprctl kill"), { description = "Window: Forcefully zap a window" })
++-- Open the console (terminal), like vanilla Hyprland does
++hl.bind("SUPER + Q", hl.dsp.exec_cmd(terminal), { description = "App: Terminal" })
++-- Close the active window
++hl.bind("SUPER + C", hl.dsp.window.close(), { description = "Window: Close" })
++-- Kill the active window and its whole process tree
++-- (the "father" of every zombie process)
++hl.bind("SUPER + SHIFT + C", hl.dsp.window.kill(), { description = "Window: Kill" })
++-- Forcefully zap the active window
++hl.bind("SUPER + SHIFT + ALT + Q", hl.dsp.window.kill(), { description = "Window: Forcefully zap a window" })
+ 
+ --# Window split ratio
+ --#/# binde = SUPER, ;/',, -- Adjust split ratio
+ hl.bind("SUPER + Semicolon", hl.dsp.layout("splitratio -0.1"), { repeating = true })
+ hl.bind("SUPER + Apostrophe", hl.dsp.layout("splitratio +0.1"), { repeating = true })
+ --# Positioning mode
++-- Toggle between tiled and floating
++hl.bind("SUPER + Space", hl.dsp.window.float({ action = "toggle" }), { description = "Window: Tile/Floating" })
+ hl.bind("SUPER + ALT + Space", hl.dsp.window.float({ action = "toggle" }), { description = "Window: Float/Tile" })
+ hl.bind("SUPER + D", hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" }),
+     { description = "Window: Maximize" })
+@@ -195,11 +213,63 @@ hl.bind("SUPER + ALT + F", hl.dsp.window.fullscreen_state({ internal = 0, client
+     { description = "Window: Fullscreen spoof" })
+ hl.bind("SUPER + P", hl.dsp.window.pin(), { description = "Window: Pin" })
+ 
+---#/# bind = SUPER+ALT, Hash,, -- Send to workspace -- (1, 2, 3,...)
++--# Window switching
++-- Alt+Tab cycles the windows of the current workspace (in a fixed order, so
++-- repeated presses visit every window). Does nothing with a single window.
++-- A fullscreen or maximized window hands its mode to the next one:
++-- fullscreen -> fullscreen, maximized -> maximized (and a spoofed client
++-- state is carried over as well).
++local function cycle_windows(step)
++    local cur = hl.get_active_window()
++    local ws = hl.get_active_workspace()
++    local wins = {}
++    for _, w in ipairs(hl.get_workspace_windows(ws)) do
++        if w.mapped and not w.hidden then
++            table.insert(wins, w)
++        end
++    end
++    if #wins < 2 then
++        return
++    end
++    table.sort(wins, function(a, b) return a.stable_id < b.stable_id end)
++
++    local idx = 0
++    for i, w in ipairs(wins) do
++        if cur and w.address == cur.address then
++            idx = i
++        end
++    end
++    local target = wins[(idx - 1 + step) % #wins + 1]
++    if idx == 0 then
++        target = wins[1]
++    end
++
++    local internal = cur and cur.fullscreen or 0
++    local client = cur and cur.fullscreen_client or 0
++    if idx ~= 0 and (internal ~= 0 or client ~= 0) then
++        hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 0, client = 0, action = "set" }))
++    end
++    hl.dispatch(hl.dsp.focus({ window = "address:" .. target.address }))
++    if idx ~= 0 and (internal ~= 0 or client ~= 0) then
++        hl.dispatch(hl.dsp.window.fullscreen_state({ internal = internal, client = client, action = "set" }))
++    end
++end
++hl.bind("ALT + Tab", function() cycle_windows(1) end, { description = "Window: Next on workspace" })
++hl.bind("ALT + SHIFT + Tab", function() cycle_windows(-1) end, { description = "Window: Previous on workspace" })
++
++--#/# bind = SUPER+SHIFT, <number>,, -- Move window to workspace -- (1, 2, 3,...)
++-- The window is moved and the target workspace is focused
+ for i = 1, 10 do
+-    hl.bind("SUPER + ALT + " .. (i % 10), function()
++    hl.bind("SUPER + SHIFT + " .. (i % 10), function()
++        hl.dispatch(hl.dsp.window.move({ workspace = workspace_in_group(i), follow = true }))
++    end, { description = "Window: Move to workspace " .. i })
++end
++--#/# bind = CTRL+SUPER, <number>,, -- Move window to workspace silently -- (1, 2, 3,...)
++-- The window is moved without focusing the target workspace
++for i = 1, 10 do
++    hl.bind("CTRL + SUPER + " .. (i % 10), function()
+         hl.dispatch(hl.dsp.window.move({ workspace = workspace_in_group(i), follow = false }))
+-    end, { description = "Window: Send to workspace " .. i })
++    end, { description = "Window: Move to workspace " .. i .. " (no focus)" })
+ end
+ --# We also use raw keycodes because some keyboard layouts register number keys as different chars. The codes can be verified with `wev`
+ -- for i = 1, 10 do
+@@ -245,23 +315,31 @@ hl.bind("CTRL + SUPER + S", hl.dsp.workspace.toggle_special("special"))
+ --##! Workspace
+ --# Switching
+ --#/# bind = SUPER, Hash,, -- Focus workspace -- (1, 2, 3,...)
++-- Pressing the key of the workspace you are already on switches to the
++-- previously focused workspace instead (toggle behaviour).
++-- NOTE: this is done here in Lua and NOT with `binds:workspace_back_and_forth`
++-- because these number keys used to be bound twice (by keysym here and by raw
++-- keycode in a second loop). Both binds fire on a single press, so the native
++-- option toggled straight back -> the workspace just blinked. The redundant raw
++-- keycode loop was removed so each physical key dispatches exactly once.
++local function focus_workspace(i)
++    local target = workspace_in_group(i)
++    if target == hl.get_active_workspace().id then
++        hl.dispatch(hl.dsp.focus({ workspace = "previous" }))
++    else
++        hl.dispatch(hl.dsp.focus({ workspace = target }))
++    end
++end
+ for i = 1, 10 do
+     hl.bind("SUPER + " .. (i % 10), function()
+-        hl.dispatch(hl.dsp.focus({ workspace = workspace_in_group(i) }))
++        focus_workspace(i)
+     end, { description = "Workspace: Focus " .. i })
+ end
+---# We also use raw keycodes because some keyboard layouts register number keys as different chars. The codes can be verified with `wev`
+-for i = 1, 10 do
+-    local numberkey = { 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 }
+-    hl.bind("SUPER + code:" .. numberkey[i], function()
+-        hl.dispatch(hl.dsp.focus({ workspace = workspace_in_group(i) }))
+-    end)
+-end
+ --# keypad numbers
+ for i = 1, 10 do
+     local numpadkey = { 87, 88, 89, 83, 84, 85, 79, 80, 81, 90 }
+     hl.bind("SUPER + code:" .. numpadkey[i], function()
+-        hl.dispatch(hl.dsp.focus({ workspace = workspace_in_group(i) }))
++        focus_workspace(i)
+     end)
+ end
+ 
+@@ -331,6 +409,22 @@ hl.bind("SUPER + ALT + F12",
+ hl.bind("SUPER + ALT + Equal",
+     hl.dsp.exec_cmd("notify-send 'Urgent notification' 'Ah hell no' -u critical -a 'Hyprland keybind'")) -- # [hidden]
+ 
++--##! Keyboard
++-- Switching layouts is done per window by Tak0-Per-Window-Switch.py, which
++-- remembers the layout of every window and restores it when it is focused
++-- again. The listener runs as a systemd user service (see
++-- ~/.config/systemd/user/tak0-per-window-switch.service).
++-- Hold Shift, press Alt: switch the layout of the focused window.
++-- Both binds are `locked` so they also work on the lock screen.
++-- The toggle goes through the daemon's control socket (single socat round
++-- trip); the script is only executed if the daemon is not running.
++hl.bind("SHIFT + Alt_L", hl.dsp.exec_cmd(
++        [[printf 'toggle\n' | socat - UNIX-CONNECT:"${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/tak0-per-window-switch.sock" 2>/dev/null || exec "$HOME/.config/hypr/scripts/Tak0-Per-Window-Switch.py" toggle]]),
++    { non_consuming = true, locked = true, description = "Keyboard: Switch layout (per window)" })
++-- Hold Alt, press Shift: switch the layout for everything
++hl.bind("ALT + Shift_L", hl.dsp.exec_cmd("$HOME/.config/hypr/scripts/KeyboardLayout.sh switch"),
++    { non_consuming = true, locked = true, description = "Keyboard: Switch layout (global)" })
++
+ --##! Session
+ hl.bind("SUPER + L", hl.dsp.exec_cmd("loginctl lock-session"), { description = "Session: Lock" })
+ hl.bind("SUPER + SHIFT + L", hl.dsp.exec_cmd("systemctl suspend || loginctl suspend"),
+@@ -347,7 +441,7 @@ hl.bind("SUPER + T", hl.dsp.exec_cmd(terminal))
+ hl.bind("CTRL + ALT + T", hl.dsp.exec_cmd(terminal))
+ hl.bind("SUPER + E", hl.dsp.exec_cmd(fileManager), { description = "App: File manager" })
+ hl.bind("SUPER + W", hl.dsp.exec_cmd(browser), { description = "App: Browser" })
+-hl.bind("SUPER + C", hl.dsp.exec_cmd(codeEditor), { description = "App: Code editor" })
++hl.bind("SUPER + B", hl.dsp.exec_cmd(browser), { description = "App: Browser" })
+ hl.bind("CTRL + SUPER + SHIFT + ALT + W", hl.dsp.exec_cmd(officeSoftware), { description = "App: Office software" })
+ hl.bind("SUPER + X", hl.dsp.exec_cmd(textEditor), { description = "App: Text editor" })
+ hl.bind("CTRL + SUPER + V", hl.dsp.exec_cmd(volumeMixer), { description = "App: Volume mixer" })
+@@ -356,4 +450,6 @@ hl.bind("CTRL + SHIFT + Escape", hl.dsp.exec_cmd(taskManager), { description = "
+ 
+ --# Cursed stuff
+ --## Make window not amogus large
+-hl.bind("CTRL + SUPER + Backslash", hl.dsp.window.resize({ x = 640, y = 480, "exact" }))
++-- Exact size: omit `relative` (a positional "exact" argument is NOT supported by
++-- the Lua dispatcher and yields a bogus height).
++hl.bind("CTRL + SUPER + Backslash", hl.dsp.window.resize({ x = 640, y = 480 }))
+diff --git a/dots/.config/hypr/hyprland/rules.lua b/dots/.config/hypr/hyprland/rules.lua
+index 0e2ac657..1f43b8be 100644
+--- a/dots/.config/hypr/hyprland/rules.lua
++++ b/dots/.config/hypr/hyprland/rules.lua
+@@ -63,6 +63,11 @@ hl.window_rule({match = {title = "^(Copying — Dolphin)$" }, move = {40, 80}})
+ hl.window_rule({match = {class = ".*" }, suppress_event = "maximize"})
+ hl.window_rule({match = {class = "^dev\\.warp\\.Warp$" }, tile = true})
+ 
++-- Never steal focus on activation requests (e.g. a Telegram notification
++-- arriving). general.lua already disables this globally; this is the
++-- explicit per-app safety net for apps that use the X11 activate path.
++hl.window_rule({match = {class = "^(org\\.telegram\\.desktop)$" }, focus_on_activate = false})
++
+ -- Picture-in-Picture
+ hl.window_rule({match = {title = "^([Pp]icture[-\\s]?[Ii]n[-\\s]?[Pp]icture)(.*)$" }, float = true})
+ hl.window_rule({match = {title = "^([Pp]icture[-\\s]?[Ii]n[-\\s]?[Pp]icture)(.*)$" }, keep_aspect_ratio = true})
+@@ -87,6 +92,8 @@ hl.window_rule({match = {float = 0 }, no_shadow = true})
+ -- ######## Workspace rules ########
+ hl.workspace_rule({ workspace = "special:special", gaps_out = 30 })
+ 
++-- Startup apps are placed on their workspace in execs.lua
++
+ -- ######## Layer rules ########
+ hl.layer_rule({ match = { namespace = ".*" }, xray = true})
+ hl.layer_rule({ match = { namespace = "walker" }, no_anim = true})
+diff --git a/dots/.config/hypr/scripts/KeyboardLayout.sh b/dots/.config/hypr/scripts/KeyboardLayout.sh
+new file mode 100755
+index 00000000..0d29bf41
+--- /dev/null
++++ b/dots/.config/hypr/scripts/KeyboardLayout.sh
+@@ -0,0 +1,124 @@
++#!/usr/bin/env bash
++# ==================================================
++#  Sunshine Hyprland Dots (2026)
++#  Project URL: https://github.com/tak0dan/Sunshine_Hyprland_Dots
++#  License: GNU GPLv3
++#  SPDX-License-Identifier: GPL-3.0-or-later
++# ==================================================
++# This is for changing kb_layouts. Set kb_layouts in "${XDG_CONFIG_HOME:-$HOME/.config}/hypr/UserConfigs/user_settings.lua"
++
++notif_icon="${XDG_CONFIG_HOME:-$HOME/.config}/swaync/images/ja.png"
++SCRIPTSDIR="${XDG_CONFIG_HOME:-$HOME/.config}/hypr/scripts"
++
++# Refined ignore list with patterns or specific device names
++ignore_patterns=(
++  "--(avrcp)"
++  "Bluetooth Speaker"
++  "Other Device 
++  Name"
++)
++
++# Function to get keyboard names
++get_keyboard_names() {
++  hyprctl devices -j | jq -r '.keyboards[].name'
++}
++
++# Function to check if a device matches any ignore pattern
++is_ignored() {
++  local device_name=$1
++  for pattern in "${ignore_patterns[@]}"; do
++    if [[ "$device_name" == *"$pattern"* ]]; then
++      return 0 # Device matches ignore pattern
++    fi
++  done
++  return 1 # Device does not match any ignore pattern
++}
++
++# Function to get current layout info
++# Stores values in layout_mapping, variant_mapping and layout_index
++get_current_layout_info() {
++  local found_kb=false
++
++  # Read from the first non-ignored layout
++  while read -r name; do
++    if ! is_ignored "$name"; then
++      found_kb=true
++      local layout_mapping_str=$(hyprctl devices -j |
++        jq -r --arg name "$name" '.keyboards[] | select(.name==$name).layout')
++      IFS="," read -r -a layout_mapping <<<"$layout_mapping_str"
++
++      local variant_mapping_str=$(hyprctl devices -j |
++        jq -r --arg name "$name" '.keyboards[] | select(.name==$name).variant')
++      IFS="," read -r -a variant_mapping <<<"$variant_mapping_str"
++
++      layout_index=$(hyprctl devices -j |
++        jq -r --arg name "$name" '.keyboards[] | select(.name==$name).active_layout_index')
++      break
++    fi
++  done <<< "$(get_keyboard_names)"
++
++  $found_kb && return 0
++  return 1
++}
++
++# Function to change keyboard layout
++change_layout() {
++  local error_found=false
++
++  while read -r name; do
++    if is_ignored "$name"; then
++      echo "Skipping ignored device: $name"
++      continue
++    fi
++
++    echo "Switching layout for $name to $new_layout..."
++    hyprctl switchxkblayout "$name" "$next_index"
++    if [ $? -ne 0 ]; then
++      echo "Error while switching layout for $name." >&2
++      error_found=true
++    fi
++  done <<<"$(get_keyboard_names)"
++
++  $error_found && return 1
++  return 0
++}
++
++
++# Stores values in layout_mapping, variant_mapping and layout_index
++if ! get_current_layout_info; then
++  echo "Could not get current layout information." >&2
++  echo "There might not be any keyboards available, \
++    or some were unnecessarily set as ignored." >&2
++  notify-send -u low -t 2000 'kb_layout' " Error:" " Layout change failed"
++  echo "Exiting $0 $*" >&2
++  exit 1
++fi
++
++current_layout=${layout_mapping[$layout_index]}
++current_variant=${variant_mapping[$layout_index]}
++
++if [[ "$1" == "status" ]]; then
++  echo "$current_layout${current_variant:+($current_variant)}"
++elif [[ "$1" == "switch" ]]; then
++  echo "Current layout: $current_layout($current_variant)"
++
++  layout_count=${#layout_mapping[@]}
++  echo "Number of layouts: $layout_count"
++
++  next_index=$(( (layout_index + 1) % layout_count ))
++  new_layout="${layout_mapping[$next_index]}"
++  new_variant="${variant_mapping[$next_index]}"
++  echo "Next layout: $new_layout"
++
++  # Execute layout change and notify
++  if ! change_layout; then
++    notify-send -u low -t 2000 'kb_layout' " Error:" " Layout change failed"
++    echo "Layout change failed." >&2
++    exit 1
++  else
++    notify-send -u low -i "$notif_icon" " kb_layout: $new_layout${new_variant:+($new_variant)}"
++    echo "Layout change notification sent."
++  fi
++else
++  echo "Usage: $0 {status|switch}"
++fi
+diff --git a/dots/.config/hypr/scripts/Tak0-Per-Window-Switch.py b/dots/.config/hypr/scripts/Tak0-Per-Window-Switch.py
+new file mode 100755
+index 00000000..8d7e54ae
+--- /dev/null
++++ b/dots/.config/hypr/scripts/Tak0-Per-Window-Switch.py
+@@ -0,0 +1,636 @@
++#!/usr/bin/env python3
++# ==================================================
++#  Sunshine Hyprland Dots (2026)
++#  Project URL: https://github.com/tak0dan/Sunshine_Hyprland_Dots
++#  License: GNU GPLv3
++#  SPDX-License-Identifier: GPL-3.0-or-later
++# ==================================================
++"""
++TAK_0'S Per-Window-Switch (python edition)
++
++Remembers the keyboard layout of every window and restores it when that
++window gets focused again.
++
++The shell version forks hyprctl + jq for every event and for every
++keyboard device, which makes switching visibly laggy. This one talks to
++Hyprland's IPC sockets directly and keeps devices, layouts and the
++window map in memory, so a focus change costs ~1ms instead of ~150ms.
++It also exposes a control socket, so the toggle keybind is a single
++socat round trip to the already running daemon.
++
++CLI (same interface as the shell version):
++  --listener        run the daemon (systemd user service runs this)
++  toggle (default)  advance the layout of the focused window
++  status            print the layout stored for the focused window
++  counts            print how many windows use each layout + the preferred one
++
++New windows start with the preferred layout of their window type (class):
++the one used on the most windows of that class, provided it leads the
++runner-up by at least PREFERRED_MARGIN (15%). A class without such a clear
++winner falls back to the same rule applied to all windows, and finally to
++the first configured layout.
++
++The layout list may change at any time (one layout, two, a swapped
++language, ...). Windows keep the layout name they were given and it is only
++resolved against the current list when used, so nothing is forgotten:
++  - a language that was removed is replaced by the one that took its place
++    (es -> de), until it is configured again, when its windows get it back;
++  - a language that has no replacement falls back to the first layout.
++"""
++
++import errno
++import json
++import os
++import select
++import socket
++import subprocess
++import sys
++
++MAP_FILE = os.path.join(
++    os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache"),
++    "kb_layout_per_window",
++)
++STATE_FILE = MAP_FILE + ".json"   # last seen layout list + replacements
++RUNTIME_DIR = os.environ.get("XDG_RUNTIME_DIR") or f"/run/user/{os.getuid()}"
++CTL_PATH = os.path.join(RUNTIME_DIR, "tak0-per-window-switch.sock")
++# A layout becomes the preferred one when its window count is at least this
++# much (relative) above every other layout's count.
++PREFERRED_MARGIN = 0.15
++
++
++def log(*args):
++    print(*args, file=sys.stderr)
++
++
++# ---------------------------------------------------------------- IPC client
++
++
++class Hypr:
++    """Minimal Hyprland IPC client (command socket + event socket)."""
++
++    def __init__(self):
++        self.cmd_path, self.evt_path = self._find_sockets()
++
++    @staticmethod
++    def _find_sockets():
++        base = os.path.join(RUNTIME_DIR, "hypr")
++        sig = os.environ.get("HYPRLAND_INSTANCE_SIGNATURE")
++        candidates = ([sig] if sig else []) + sorted(
++            os.listdir(base) if os.path.isdir(base) else [], reverse=True
++        )
++        for entry in candidates:
++            cmd = os.path.join(base, entry, ".socket.sock")
++            if os.path.exists(cmd):
++                return cmd, os.path.join(base, entry, ".socket2.sock")
++        raise SystemExit("Error: Hyprland socket not found.")
++
++    def cmd(self, command):
++        """Send one IPC command, return the raw reply."""
++        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
++            sock.settimeout(2.0)
++            sock.connect(self.cmd_path)
++            sock.sendall(command.encode())
++            chunks = []
++            while True:
++                chunk = sock.recv(65536)
++                if not chunk:
++                    break
++                chunks.append(chunk)
++        return b"".join(chunks).decode(errors="replace")
++
++    def jcmd(self, command):
++        try:
++            raw = self.cmd(command)
++            return json.loads(raw) if raw else None
++        except (OSError, ValueError):
++            return None
++
++
++# ---------------------------------------------------------------- state
++
++
++class State:
++    """Everything the switcher needs, cached in memory."""
++
++    def __init__(self):
++        self.hypr = Hypr()
++        self.layouts = self._load_layouts()
++        self.devices = []          # keyboard names that have a layout
++        self.cur_idx = 0           # layout index currently in effect
++        self.last_focus = None     # window address ("0x...")
++        self.maps = {}             # window address -> layout name
++        self.classes = {}          # window address -> window class
++        self.dirty = True          # devices/cur_idx need a resync
++        self.aliases = {}          # removed layout -> layout that replaced it
++        self._load_map()
++        self._load_state()
++
++    # ---- layout / device info
++
++    def _load_layouts(self):
++        option = self.hypr.jcmd("j/getoption input:kb_layout") or {}
++        raw = (option.get("str") or "").strip()
++        if not raw:
++            devices = self.hypr.jcmd("j/devices") or {}
++            raw = next(
++                (
++                    kb.get("layout")
++                    for kb in devices.get("keyboards", [])
++                    if kb.get("layout")
++                ),
++                "",
++            )
++        return [lay for lay in raw.split(",") if lay] or ["us"]
++
++    # ---- layout list changes
++
++    def _load_state(self):
++        saved = []
++        try:
++            with open(STATE_FILE, "r", encoding="utf-8") as handle:
++                data = json.load(handle)
++            saved = [l for l in data.get("layouts", []) if isinstance(l, str)]
++            self.aliases = {
++                k: v for k, v in data.get("aliases", {}).items() if isinstance(v, str)
++            }
++        except (OSError, ValueError, AttributeError):
++            pass
++        self.reconcile(saved)
++
++    def _save_state(self):
++        try:
++            os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
++            tmp = STATE_FILE + ".tmp"
++            with open(tmp, "w", encoding="utf-8") as handle:
++                json.dump({"layouts": self.layouts, "aliases": self.aliases}, handle)
++            os.replace(tmp, STATE_FILE)
++        except OSError:
++            pass
++
++    def reconcile(self, old):
++        """Compare the previous layout list with the current one.
++
++        Layouts that vanished are paired, in order, with the ones that
++        appeared (es -> de). Unpaired ones just fall back to the default.
++        The windows' own data is never rewritten, so switching back works."""
++        if old != self.layouts:
++            removed = [l for l in dict.fromkeys(old) if l not in self.layouts]
++            added = [l for l in dict.fromkeys(self.layouts) if l not in old]
++            for name in added + removed:
++                self.aliases.pop(name, None)
++            if len(removed) == len(added):
++                self.aliases.update(zip(removed, added))
++            self._save_state()
++        return old != self.layouts
++
++    def resolve(self, name):
++        """Configured layout that `name` stands for now, or None."""
++        seen = set()
++        while name and name not in self.layouts and name not in seen:
++            seen.add(name)
++            name = self.aliases.get(name)
++        return name if name in self.layouts else None
++
++    def effective(self, name):
++        return self.resolve(name) or self.layouts[0]
++
++    def index_of(self, name):
++        try:
++            return self.layouts.index(name)
++        except ValueError:
++            return 0
++
++    def refresh_devices(self, devices=None):
++        devices = devices if devices is not None else (self.hypr.jcmd("j/devices") or {})
++        self.devices = [
++            kb["name"] for kb in devices.get("keyboards", []) if kb.get("layout")
++        ]
++        return devices
++
++    def sync(self, force=False):
++        """Refresh the device list and the layout index actually in effect."""
++        if not force and not self.dirty:
++            return
++        devices = self.refresh_devices()
++        keyboards = [
++            kb for kb in devices.get("keyboards", []) if kb.get("name") in self.devices
++        ]
++        # Prefer the primary keyboard: virtual devices (power/sleep buttons,
++        # video bus, ydotool) can drift out of sync with the keyboard you
++        # actually type on, and they are listed first.
++        primary = next((kb for kb in keyboards if kb.get("main")), None)
++        for kb in ([primary] if primary else []) + keyboards:
++            idx = kb.get("active_layout_index")
++            if isinstance(idx, int) and 0 <= idx < len(self.layouts):
++                self.cur_idx = idx
++                break
++        self.dirty = False
++
++    # ---- per-window map (same "0xADDR:layout" format as the shell version)
++
++    def _load_map(self):
++        try:
++            with open(MAP_FILE, "r", encoding="utf-8") as handle:
++                for line in handle:
++                    line = line.strip()
++                    if ":" in line:
++                        addr, lay = line.split(":", 1)
++                        self.maps[addr] = lay
++        except OSError:
++            pass
++
++    # ---- layout usage counter
++
++    def counts(self, cls=None):
++        """Windows per layout; only those of class `cls` unless it is None.
++
++        maps only holds open windows, so closed ones stop counting."""
++        counts = {lay: 0 for lay in self.layouts}
++        for addr, lay in self.maps.items():
++            lay = self.resolve(lay)
++            if lay and (cls is None or self.classes.get(addr) == cls):
++                counts[lay] += 1
++        return counts
++
++    def clear_winner(self, counts):
++        """The layout leading by PREFERRED_MARGIN, or None."""
++        ranked = sorted(counts.items(), key=lambda kv: -kv[1])
++        top, top_n = ranked[0]
++        runner_up = ranked[1][1] if len(ranked) > 1 else 0
++        if top_n > 0 and top_n >= runner_up * (1 + PREFERRED_MARGIN):
++            return top
++        return None
++
++    def preferred_layout(self, cls=None):
++        """Layout for a new window of class `cls`.
++
++        Per class first, then all windows, then the first layout."""
++        winner = cls and self.clear_winner(self.counts(cls))
++        return winner or self.clear_winner(self.counts()) or self.layouts[0]
++
++    def load_classes(self):
++        for client in self.hypr.jcmd("j/clients") or []:
++            if client.get("address"):
++                self.classes[client["address"]] = client.get("class") or ""
++
++    def class_of(self, addr):
++        if addr not in self.classes:
++            self.load_classes()
++        return self.classes.get(addr)
++
++    def prune_stale(self):
++        """Drop windows that closed while the daemon was not running."""
++        clients = self.hypr.jcmd("j/clients")
++        if clients is None:
++            return
++        live = {c.get("address") for c in clients}
++        stale = [a for a in self.maps if a not in live]
++        self.classes = {a: c for a, c in self.classes.items() if a in live}
++        for addr in stale:
++            del self.maps[addr]
++        if stale:
++            self._write_map()
++
++    def store(self, addr, lay):
++        if not addr or self.maps.get(addr) == lay:
++            return
++        self.maps[addr] = lay
++        self._write_map()
++
++    def prune(self, addr):
++        if self.maps.pop(addr, None) is not None:
++            self._write_map()
++
++    def _write_map(self):
++        os.makedirs(os.path.dirname(MAP_FILE), exist_ok=True)
++        tmp = MAP_FILE + ".tmp"
++        with open(tmp, "w", encoding="utf-8") as handle:
++            for addr, lay in self.maps.items():
++                handle.write(f"{addr}:{lay}\n")
++        os.replace(tmp, MAP_FILE)
++
++    # ---- switching
++
++    def switch_device(self, name, idx):
++        """Switch one keyboard, tolerating Hyprland's IPC dialects.
++
++        Raw request first (that is what `hyprctl switchxkblayout` sends);
++        the older `dispatch ...` form is the legacy fallback.
++        """
++        for command in (
++            f"switchxkblayout {name} {idx}",
++            f"/switchxkblayout {name} {idx}",
++            f"dispatch switchxkblayout {name} {idx}",
++        ):
++            try:
++                reply = self.hypr.cmd(command)
++            except OSError:
++                continue
++            if not reply.startswith("error"):
++                return True
++        return False
++
++    def switch_to(self, idx):
++        if idx == self.cur_idx:
++            return
++        for name in self.devices:
++            # NOTE: `switchxkblayout all` only landed in newer Hyprland; on
++            # 0.56 it answers "ok" and does nothing, so every keyboard gets
++            # its own (cheap, in-process) request.
++            self.switch_device(name, idx)
++        self.cur_idx = idx
++
++    def focused_window(self):
++        info = self.hypr.jcmd("j/activewindow") or {}
++        return info.get("address")
++
++    def do_toggle(self):
++        """Advance the layout of the focused window and remember it."""
++        if len(self.layouts) < 2:
++            return "only one layout"
++        self.sync(force=True)
++        # With the session locked there is no focused window; the layout then
++        # belongs to the window that was focused before the lock.
++        addr = self.focused_window() or self.last_focus
++        nxt = (self.cur_idx + 1) % len(self.layouts)
++        self.switch_to(nxt)
++        # Ask Hyprland what is really in effect now instead of trusting the
++        # request: this way the notification (and the saved map) can never
++        # claim a layout that was not actually applied.
++        self.sync(force=True)
++        actual = self.layouts[self.cur_idx]
++        if addr:
++            self.store(addr, actual)
++        notify(actual)
++        return "ok"
++
++    def focused_layout(self):
++        stored = self.maps.get(self.focused_window() or "")
++        return self.effective(stored) if stored else self.layouts[self.cur_idx]
++
++    # ---- event handling
++
++    def on_focus(self, addr):
++        if addr == self.last_focus:
++            return
++        prev, self.last_focus = self.last_focus, addr
++        # Remember what the window we are leaving was using. This also
++        # captures layouts changed through the global switcher.
++        # A stored name that only stands for the current layout (a removed
++        # language that was replaced) is kept, so it is not forgotten.
++        if prev:
++            cur = self.layouts[self.cur_idx]
++            if prev not in self.maps or self.effective(self.maps[prev]) != cur:
++                self.store(prev, cur)
++        want = self.effective(self.maps[addr]) if addr in self.maps else None
++        if not want:
++            # First time we see this window: start it with the preferred
++            # layout. It is not counted yet, so it cannot vote for itself.
++            want = self.preferred_layout(self.class_of(addr))
++            self.store(addr, want)
++        self.switch_to(self.index_of(want))
++
++    def apply_batch(self, events):
++        focus = None
++        relayout = False
++        closed = []
++        for name, data in events:
++            if name == "activewindowv2":
++                data = data.strip()
++                if data and data != "empty":
++                    focus = data if data.startswith("0x") else "0x" + data
++            elif name == "openwindow":
++                # ADDRESS,WORKSPACE,CLASS,TITLE
++                fields = data.split(",", 3)
++                if len(fields) >= 3:
++                    self.classes["0x" + fields[0]] = fields[2]
++            elif name == "closewindow":
++                data = data.strip()
++                if data:
++                    closed.append(data if data.startswith("0x") else "0x" + data)
++            elif name == "activelayout":
++                _, _, lay = data.partition(",")
++                idx = self.layouts.index(lay) if lay in self.layouts else -1
++                if idx >= 0:
++                    self.cur_idx = idx
++                else:
++                    # A layout we have not seen yet (global switcher): the
++                    # next sync will pick the real index up.
++                    self.dirty = True
++            elif name in ("deviceadded", "deviceremoved"):
++                self.devices = []
++                self.dirty = True
++            elif name == "configreloaded":
++                old, self.layouts = self.layouts, self._load_layouts()
++                self.dirty = True
++                self.cur_idx = min(self.cur_idx, len(self.layouts) - 1)
++                relayout = self.reconcile(old)
++
++        for addr in closed:
++            self.prune(addr)
++            self.classes.pop(addr, None)
++        if self.dirty:
++            self.sync()
++        if focus:
++            self.on_focus(focus)
++        elif relayout and self.last_focus in self.maps:
++            # The layout list changed under the focused window: give it the
++            # layout it stands for now.
++            self.switch_to(self.index_of(self.effective(self.maps[self.last_focus])))
++
++
++# ---------------------------------------------------------------- notifications
++
++
++def pick_icon():
++    config = os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")
++    for path in (
++        os.path.join(config, "swaync", "icons", "keyboard.png"),
++        os.path.join(config, "swaync", "images", "ja.png"),
++        os.path.join(config, "swaync", "images", "note.png"),
++    ):
++        if os.path.exists(path):
++            return path
++    return ""
++
++
++def notify(layout):
++    if not (os.environ.get("WAYLAND_DISPLAY") or os.environ.get("DISPLAY")):
++        return
++    subprocess.run(
++        [
++            "notify-send",
++            "-e",
++            "-h", "string:x-canonical-private-synchronous:kb_layout_notif",
++            "-h", "boolean:SWAYNC_BYPASS_DND:true",
++            "-u", "low",
++            "-i", pick_icon(),
++            " Keyboard Layout (Per-Window)",
++            f" {layout}",
++        ],
++        stdout=subprocess.DEVNULL,
++        stderr=subprocess.DEVNULL,
++        check=False,
++    )
++
++
++# ---------------------------------------------------------------- control socket
++
++
++def ctl_send(request):
++    """Ask a running daemon to handle a request. None if no daemon answers."""
++    if not os.path.exists(CTL_PATH):
++        return None
++    try:
++        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
++            sock.settimeout(2.0)
++            sock.connect(CTL_PATH)
++            sock.sendall(request.encode())
++            return sock.recv(4096).decode(errors="replace").strip()
++    except OSError:
++        return None
++
++
++def ctl_server():
++    server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
++    try:
++        server.bind(CTL_PATH)
++    except OSError as err:
++        if err.errno != errno.EADDRINUSE:
++            raise
++        # Stale socket from a dead daemon (or a duplicate instance).
++        if ctl_send("ping") == "pong":
++            raise SystemExit("Another instance is already running.")
++        os.unlink(CTL_PATH)
++        server.bind(CTL_PATH)
++    server.listen(4)
++    server.setblocking(False)
++    return server
++
++
++def format_counts(state):
++    def line(cls):
++        parts = [f"{lay}={n}" for lay, n in state.counts(cls).items()]
++        return f"{' '.join(parts)} preferred={state.preferred_layout(cls)}"
++
++    state.load_classes()
++    lines = [f"all: {line(None)}"]
++    for cls in sorted({c for a, c in state.classes.items() if a in state.maps and c}):
++        lines.append(f"{cls}: {line(cls)}")
++    return "\n".join(lines)
++
++
++def handle_ctl(state, server):
++    try:
++        conn, _ = server.accept()
++    except OSError:
++        return False
++    with conn:
++        conn.settimeout(1.0)
++        try:
++            request = conn.recv(256).decode(errors="replace").strip() or "toggle"
++        except OSError:
++            return False
++        if request == "ping":
++            reply = "pong"
++        elif request == "toggle":
++            reply = state.do_toggle()
++        elif request == "status":
++            reply = state.focused_layout()
++        elif request == "counts":
++            reply = format_counts(state)
++        else:
++            reply = f"unknown command: {request}"
++        try:
++            conn.sendall(reply.encode())
++        except OSError:
++            pass
++    return request == "quit"
++
++
++# ---------------------------------------------------------------- listener
++
++
++def run_listener():
++    state = State()
++    state.load_classes()
++    state.prune_stale()
++    state.sync(force=True)
++    state.last_focus = state.focused_window()
++
++    events = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
++    events.setblocking(False)
++    events.connect_ex(state.hypr.evt_path)
++
++    server = ctl_server()
++    buf = b""
++
++    while True:
++        ready, _, _ = select.select([events, server], [], [])
++        batch = []
++
++        if events in ready:
++            while True:
++                try:
++                    chunk = events.recv(65536)
++                except BlockingIOError:
++                    break
++                if not chunk:
++                    raise SystemExit  # Hyprland is gone; systemd restarts us
++                buf += chunk
++                lines = buf.split(b"\n")
++                buf = lines.pop()
++                for line in lines:
++                    name, _, data = line.decode(errors="replace").partition(">>")
++                    batch.append((name, data))
++                # Drain everything already queued so a burst of focus
++                # changes ends in a single switch.
++                if not select.select([events], [], [], 0)[0]:
++                    break
++
++        quit_requested = False
++        if server in ready:
++            quit_requested = handle_ctl(state, server)
++
++        if batch:
++            state.apply_batch(batch)
++        if quit_requested:
++            raise SystemExit
++
++
++# ---------------------------------------------------------------- CLI
++
++
++def main():
++    mode = sys.argv[1] if len(sys.argv) > 1 else "toggle"
++    if mode in ("--listener", "--daemon"):
++        run_listener()
++        return 0
++    if mode in ("toggle", "status", "counts"):
++        reply = ctl_send(mode)
++        if reply is None:
++            # No daemon running: do the work directly (same result, just
++            # without the per-window restore until the service is back).
++            state = State()
++            state.sync(force=True)
++            if mode == "toggle":
++                reply = state.do_toggle()
++            elif mode == "counts":
++                state.prune_stale()
++                reply = format_counts(state)
++            else:
++                reply = state.focused_layout()
++        print(reply)
++        return 0
++    if mode in ("-h", "--help"):
++        print(__doc__)
++        return 0
++    print(f"Usage: {os.path.basename(sys.argv[0])} [--listener|toggle|status|counts]", file=sys.stderr)
++    return 1
++
++
++if __name__ == "__main__":
++    try:
++        sys.exit(main())
++    except KeyboardInterrupt:
++        sys.exit(0)
+diff --git a/dots/.config/hypr/scripts/Tak0-Per-Window-Switch.sh b/dots/.config/hypr/scripts/Tak0-Per-Window-Switch.sh
+new file mode 100755
+index 00000000..df37270a
+--- /dev/null
++++ b/dots/.config/hypr/scripts/Tak0-Per-Window-Switch.sh
+@@ -0,0 +1,223 @@
++#!/usr/bin/env bash
++# ==================================================
++#  Sunshine Hyprland Dots (2026)
++#  Project URL: https://github.com/tak0dan/Sunshine_Hyprland_Dots
++#  License: GNU GPLv3
++#  SPDX-License-Identifier: GPL-3.0-or-later
++# ==================================================
++##################################################################
++#                                                                #
++#                  TAK_0'S Per-Window-Switch                     #
++#                                                                #
++#  Just a little script that I made to switch keyboard layouts   #
++#       per-window instead of global switching for the more      #
++#                 smooth and comfortable workflow.               #
++#                                                                #
++##################################################################
++
++set -uo pipefail
++
++MAP_FILE="${XDG_CACHE_HOME:-$HOME/.cache}/kb_layout_per_window"
++notif="${XDG_CONFIG_HOME:-$HOME/.config}/swaync/images"
++icons_dir="${XDG_CONFIG_HOME:-$HOME/.config}/swaync/icons"
++SCRIPT_NAME="$(basename "$0")"
++SCRIPT_PATH="$(readlink -f "$0")"
++
++# Pick notification icon
++if [[ -f "$icons_dir/keyboard.png" ]]; then
++    ICON="$icons_dir/keyboard.png"
++elif [[ -f "$notif/ja.png" ]]; then
++    ICON="$notif/ja.png"
++else
++    ICON="$notif/note.png"
++fi
++
++# Ensure cache directory and map file exist
++mkdir -p "$(dirname "$MAP_FILE")"
++touch "$MAP_FILE"
++
++# Function to get layouts (queries live Hyprland option first, then config files)
++get_layouts() {
++    local layouts=""
++
++    # 1. Primary: Live option from active Hyprland session (fast, authoritative in both Lua & conf modes)
++    layouts=$(hyprctl -j getoption input:kb_layout 2>/dev/null | jq -r '.str // empty' || true)
++
++    # 2. Secondary: Query keyboards directly from devices JSON
++    if [[ -z "$layouts" || "$layouts" == "null" ]]; then
++        layouts=$(hyprctl -j devices 2>/dev/null | jq -r '[.keyboards[].layout | select(. != null and . != "")] | first // empty' || true)
++    fi
++
++    # 3. Fallback: Parse Lua configuration files
++    if [[ -z "$layouts" || "$layouts" == "null" ]]; then
++        local config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
++        local hypr_dir="$config_home/hypr"
++        local lua_user="$hypr_dir/UserConfigs/user_settings.lua"
++        local lua_sys="$hypr_dir/configs/system_settings.lua"
++        local lua_legacy_sys="$hypr_dir/UserConfigs/system_settings.lua"
++        local lua_pristine_sys="$hypr_dir/lua/settings.lua"
++        if [[ -f "$lua_user" ]] && grep -q 'kb_layout' "$lua_user" 2>/dev/null; then
++            layouts=$(grep 'kb_layout' "$lua_user" | sed -n "s/.*kb_layout[[:space:]]*=[[:space:]]*[\"']\([^\"']*\)[\"'].*/\1/p" | head -n1)
++        elif [[ -f "$lua_sys" ]] && grep -q 'kb_layout' "$lua_sys" 2>/dev/null; then
++            layouts=$(grep 'kb_layout' "$lua_sys" | sed -n "s/.*kb_layout[[:space:]]*=[[:space:]]*[\"']\([^\"']*\)[\"'].*/\1/p" | head -n1)
++        elif [[ -f "$lua_legacy_sys" ]] && grep -q 'kb_layout' "$lua_legacy_sys" 2>/dev/null; then
++            layouts=$(grep 'kb_layout' "$lua_legacy_sys" | sed -n "s/.*kb_layout[[:space:]]*=[[:space:]]*[\"']\([^\"']*\)[\"'].*/\1/p" | head -n1)
++        elif [[ -f "$lua_pristine_sys" ]] && grep -q 'kb_layout' "$lua_pristine_sys" 2>/dev/null; then
++            layouts=$(grep 'kb_layout' "$lua_pristine_sys" | sed -n "s/.*kb_layout[[:space:]]*=[[:space:]]*[\"']\([^\"']*\)[\"'].*/\1/p" | head -n1)
++        fi
++    fi
++
++    echo "${layouts:-us}" | tr ',' ' '
++}
++
++raw_layouts=$(get_layouts)
++if [[ -z "$raw_layouts" ]]; then
++    echo "Error: cannot find kb_layout in configuration files or active session." >&2
++    exit 1
++fi
++
++kb_layouts=($raw_layouts)
++count=${#kb_layouts[@]}
++
++# Get current active window ID/address
++get_win() {
++  hyprctl activewindow -j 2>/dev/null | jq -r '.address // .id // empty'
++}
++
++# Save window-specific layout
++save_map() {
++  local W=$1 L=$2
++  grep -v "^${W}:" "$MAP_FILE" > "$MAP_FILE.tmp" 2>/dev/null || true
++  echo "${W}:${L}" >> "$MAP_FILE.tmp"
++  mv "$MAP_FILE.tmp" "$MAP_FILE"
++}
++
++# Load layout for window (fallback to default layout)
++load_map() {
++  local W=$1
++  local E
++  E=$(grep "^${W}:" "$MAP_FILE" 2>/dev/null || true)
++  [[ -n "$E" ]] && echo "${E#*:}" || echo "${kb_layouts[0]}"
++}
++
++# Switch layout for all keyboards to layout index.
++# NOTE: patched for Hyprland 0.56, which has no `switchxkblayout all`
++# (it answers "ok" but changes nothing), so every keyboard that has a
++# layout configured is switched individually.
++do_switch() {
++  local IDX=$1
++  local name
++  while read -r name; do
++    [[ -n "$name" ]] || continue
++    hyprctl switchxkblayout "$name" "$IDX" >/dev/null 2>&1 || true
++  done < <(hyprctl -j devices 2>/dev/null |
++    jq -r '.keyboards[] | select(.layout != null and .layout != "") | .name')
++}
++
++# Toggle layout for current window only
++cmd_toggle() {
++  local W
++  W=$(get_win)
++  [[ -z "$W" || "$W" == "null" ]] && return
++
++  local CUR
++  CUR=$(load_map "$W")
++  local i=0
++  local NEXT
++
++  for idx in "${!kb_layouts[@]}"; do
++    if [[ "${kb_layouts[idx]}" == "$CUR" ]]; then
++      i=$idx
++      break
++    fi
++  done
++
++  NEXT=$(( (i + 1) % count ))
++  do_switch "$NEXT"
++  save_map "$W" "${kb_layouts[NEXT]}"
++
++  if command -v notify-send >/dev/null 2>&1 && [[ -n "${WAYLAND_DISPLAY:-}${DISPLAY:-}" ]]; then
++    notify-send -e \
++      -h string:x-canonical-private-synchronous:kb_layout_notif \
++      -h boolean:SWAYNC_BYPASS_DND:true \
++      -u low \
++      -i "$ICON" \
++      " Keyboard Layout (Per-Window)" " ${kb_layouts[NEXT]}" 2>/dev/null || true
++  fi
++}
++
++# Restore layout on focus. Takes the window address, or looks it up.
++cmd_restore() {
++  local W=${1:-}
++  [[ -n "$W" ]] || W=$(get_win)
++  [[ -z "$W" || "$W" == "null" ]] && return
++
++  local LAY
++  LAY=$(load_map "$W")
++  for idx in "${!kb_layouts[@]}"; do
++    if [[ "${kb_layouts[idx]}" == "$LAY" ]]; then
++      do_switch "$idx"
++      break
++    fi
++  done
++}
++
++# Listen to focus events and restore window-specific layouts
++subscribe() {
++  local runtime_dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
++  local SOCKET2=""
++
++  if [[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
++    SOCKET2="$runtime_dir/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket2.sock"
++  fi
++
++  if [[ ! -S "$SOCKET2" ]]; then
++    local sig
++    sig=$(hyprctl instances -j 2>/dev/null | jq -r '.[0].instance // empty')
++    [[ -n "$sig" ]] && SOCKET2="$runtime_dir/hypr/$sig/.socket2.sock"
++  fi
++
++  if [[ ! -S "$SOCKET2" ]]; then
++    echo "Error: Hyprland socket not found." >&2
++    exit 1
++  fi
++
++  if ! command -v socat >/dev/null 2>&1; then
++    echo "Error: socat is required for socket listening." >&2
++    exit 1
++  fi
++
++  # Only activewindowv2 carries the address. Hyprland re-sends it on every title
++  # change, so a terminal spinner or a browser tab fires it many times a second:
++  # act only when focus really moves to another window.
++  local last="" addr
++  socat -u UNIX-CONNECT:"$SOCKET2" - 2>/dev/null | while read -r line; do
++    [[ "$line" == activewindowv2\>\>* ]] || continue
++    addr="${line#activewindowv2>>}"
++    [[ -z "$addr" || "$addr" == "," || "$addr" == "$last" ]] && continue
++    last="$addr"
++    cmd_restore "0x$addr"
++  done
++}
++
++# CLI
++case "${1:-toggle}" in
++  --listener)
++    subscribe
++    ;;
++  status)
++    W=$(get_win)
++    load_map "$W"
++    ;;
++  toggle|"")
++    # Ensure only one listener is active
++    if ! pgrep -f "$SCRIPT_NAME.*--listener" >/dev/null 2>&1; then
++      "$SCRIPT_PATH" --listener &
++    fi
++    cmd_toggle
++    ;;
++  *)
++    echo "Usage: $SCRIPT_NAME [toggle|status]" >&2
++    exit 1
++    ;;
++esac
+diff --git a/dots/.config/kde-material-you-colors/config.conf b/dots/.config/kde-material-you-colors/config.conf
+index caa1fb8a..4a0965d0 100644
+--- a/dots/.config/kde-material-you-colors/config.conf
++++ b/dots/.config/kde-material-you-colors/config.conf
+@@ -31,11 +31,11 @@ ncolor = 0
+ 
+ # Light scheme icons theme
+ #iconslight = OneUI-light
+-iconslight = breeze-plus
++iconslight = Wallpaper-light
+ 
+ # Dark scheme icons theme
+ #iconsdark = OneUI-dark
+-iconsdark = breeze-plus-dark
++iconsdark = Wallpaper-dark
+ 
+ # Use pywal to theme other programs using Material You colors
+ pywal=False
+diff --git a/dots/.config/kitty/kitty.conf b/dots/.config/kitty/kitty.conf
+index 97473db0..ec13e795 100644
+--- a/dots/.config/kitty/kitty.conf
++++ b/dots/.config/kitty/kitty.conf
+@@ -15,11 +15,14 @@ window_margin_width 21.75
+ # No stupid close confirmation
+ confirm_os_window_close 0
+ 
++# Opacity
++background_opacity 0.6
++dynamic_background_opacity 1
+ # Use fish shell
+ shell fish
+ 
+-# Copy
+-map ctrl+c    copy_or_interrupt
++# Ctrl+C is intentionally NOT mapped: kitty passes it through to the
++# program, so it stays the classic SIGINT. Copy is kitty_mod+c.
+ 
+ # Search
+ map ctrl+f   launch --location=hsplit --allow-remote-control kitty +kitten search.py @active-kitty-window-id
+diff --git a/dots/.config/matugen/config.toml b/dots/.config/matugen/config.toml
+index 4c4449a3..c9423b12 100644
+--- a/dots/.config/matugen/config.toml
++++ b/dots/.config/matugen/config.toml
+@@ -32,3 +32,16 @@ output_path = '~/.local/state/quickshell/user/generated/color.txt'
+ [templates.wallpaper]
+ input_path = '~/.config/matugen/templates/wallpaper.txt'
+ output_path = '~/.local/state/quickshell/user/generated/wallpaper/path.txt'
++
++[templates.btop]
++input_path = '~/.config/matugen/templates/btop/matugen.theme'
++output_path = '~/.config/btop/themes/matugen.theme'
++post_hook = 'pkill -USR2 -x btop || true'
++
++# Spotify (spicetify) colour scheme, the btop "wallust" theme and Wallpaper-dark/-light icon themes,
++# built from the wallpaper's own colours. Runs detached: the icon themes take
++# a few seconds and nothing else waits on them.
++[templates.wallpaper_theme]
++input_path = '~/.config/matugen/templates/wallpaper-theme/source.json'
++output_path = '~/.local/state/quickshell/user/generated/wallpaper-theme/source.json'
++post_hook = 'setsid -f ~/.config/matugen/templates/wallpaper-theme/wallpaper-theme.py >~/.local/state/quickshell/user/generated/wallpaper-theme/log.txt 2>&1'
+diff --git a/dots/.config/matugen/templates/btop/matugen.theme b/dots/.config/matugen/templates/btop/matugen.theme
+new file mode 100644
+index 00000000..7a5168f6
+--- /dev/null
++++ b/dots/.config/matugen/templates/btop/matugen.theme
+@@ -0,0 +1,54 @@
++# btop theme generated by matugen from the current wallpaper
++
++theme[main_bg]="{{colors.surface.default.hex}}"
++theme[main_fg]="{{colors.on_surface.default.hex}}"
++theme[title]="{{colors.on_surface.default.hex}}"
++theme[hi_fg]="{{colors.primary.default.hex}}"
++theme[selected_bg]="{{colors.primary_container.default.hex}}"
++theme[selected_fg]="{{colors.on_primary_container.default.hex}}"
++theme[inactive_fg]="{{colors.outline.default.hex}}"
++theme[graph_text]="{{colors.on_surface_variant.default.hex}}"
++theme[meter_bg]="{{colors.surface_container_highest.default.hex}}"
++theme[proc_misc]="{{colors.tertiary.default.hex}}"
++
++theme[cpu_box]="{{colors.primary.default.hex}}"
++theme[mem_box]="{{colors.secondary.default.hex}}"
++theme[net_box]="{{colors.tertiary.default.hex}}"
++theme[proc_box]="{{colors.primary.default.hex}}"
++theme[div_line]="{{colors.outline_variant.default.hex}}"
++
++theme[temp_start]="{{colors.primary.default.hex}}"
++theme[temp_mid]="{{colors.tertiary.default.hex}}"
++theme[temp_end]="{{colors.error.default.hex}}"
++
++theme[cpu_start]="{{colors.primary_container.default.hex}}"
++theme[cpu_mid]="{{colors.primary.default.hex}}"
++theme[cpu_end]="{{colors.primary_fixed.default.hex}}"
++
++theme[free_start]="{{colors.tertiary_container.default.hex}}"
++theme[free_mid]="{{colors.tertiary.default.hex}}"
++theme[free_end]="{{colors.tertiary_fixed.default.hex}}"
++
++theme[cached_start]="{{colors.secondary_container.default.hex}}"
++theme[cached_mid]="{{colors.secondary.default.hex}}"
++theme[cached_end]="{{colors.secondary_fixed.default.hex}}"
++
++theme[available_start]="{{colors.primary_container.default.hex}}"
++theme[available_mid]="{{colors.primary.default.hex}}"
++theme[available_end]="{{colors.primary_fixed.default.hex}}"
++
++theme[used_start]="{{colors.secondary_container.default.hex}}"
++theme[used_mid]="{{colors.secondary.default.hex}}"
++theme[used_end]="{{colors.error.default.hex}}"
++
++theme[download_start]="{{colors.primary_container.default.hex}}"
++theme[download_mid]="{{colors.primary.default.hex}}"
++theme[download_end]="{{colors.primary_fixed.default.hex}}"
++
++theme[upload_start]="{{colors.secondary_container.default.hex}}"
++theme[upload_mid]="{{colors.secondary.default.hex}}"
++theme[upload_end]="{{colors.secondary_fixed.default.hex}}"
++
++theme[process_start]="{{colors.primary.default.hex}}"
++theme[process_mid]="{{colors.tertiary.default.hex}}"
++theme[process_end]="{{colors.secondary.default.hex}}"
+diff --git a/dots/.config/matugen/templates/hyprland/colors.lua b/dots/.config/matugen/templates/hyprland/colors.lua
+index 0175f2d4..18386de4 100644
+--- a/dots/.config/matugen/templates/hyprland/colors.lua
++++ b/dots/.config/matugen/templates/hyprland/colors.lua
+@@ -1,7 +1,7 @@
+ hl.config({
+     general = {
+         col = {
+-            active_border   = "rgba({{colors.outline_variant.default.hex_stripped}}77)",
++            active_border   = "rgba({{colors.primary.default.hex_stripped}}FF)",
+             inactive_border = "rgba({{colors.surface_container_low.default.hex_stripped}}33)",
+         },
+     },
+diff --git a/dots/.config/matugen/templates/wallpaper-theme/design.py b/dots/.config/matugen/templates/wallpaper-theme/design.py
+new file mode 100644
+index 00000000..d8752731
+--- /dev/null
++++ b/dots/.config/matugen/templates/wallpaper-theme/design.py
+@@ -0,0 +1,764 @@
++"""Wallpaper -> design system. Every stage is deterministic and inspectable.
++
++ 1. sample     up to 100 representative shades of what is on screen (k-means
++               in OKLab, fixed seed), each with its share of the screen
++ 2. organise   shades -> hue families (basins of the hue histogram), each a
++               tonal ramp of real shades ordered by lightness; plus a neutral
++               ramp and the picture's own whites
++ 3. relate     complementary / opposite / analogous relations between the
++               families -> scheme type
++ 4. roles      fixed slots, like Catppuccin or Material: an 8-step surface
++               ramp, text roles at fixed contrast, three accent ramps with
++               balanced chroma, an error ramp; then an adjustment pass
++               (gamut, contrast, minimum distance between roles)
++
++Design targets come from measuring 143 published spicetify schemes: dark
++pages around L 0.24 with chroma ~0.015 (rarely above 0.035), nearly always
++cool blue-violet when coloured; side panel and player in the page's family
++slightly lower; cards +0.05, hover +0.09; accents around L 0.71-0.80,
++chroma ~0.10; light pages around L 0.97.
++"""
++
++import numpy as np
++
++# ---------- colour space (sRGB <-> OKLab / OKLCH) ----------
++
++def srgb_to_linear(c):
++    c = np.asarray(c, dtype=float)
++    return np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
++
++
++def linear_to_srgb(c):
++    c = np.asarray(c, dtype=float)
++    return np.where(c <= 0.0031308, c * 12.92, 1.055 * np.abs(c) ** (1 / 2.4) - 0.055)
++
++
++_M1 = np.array([[0.4122214708, 0.5363325363, 0.0514459929],
++                [0.2119034982, 0.6806995451, 0.1073969566],
++                [0.0883024619, 0.2817188376, 0.6299787005]])
++_M2 = np.array([[0.2104542553, 0.7936177850, -0.0040720468],
++                [1.9779984951, -2.4285922050, 0.4505937099],
++                [0.0259040371, 0.7827717662, -0.8086757660]])
++_M1I, _M2I = np.linalg.inv(_M1), np.linalg.inv(_M2)
++
++
++def rgb_to_oklab(rgb):
++    """rgb in 0..1, shape (..., 3)"""
++    return np.cbrt(srgb_to_linear(rgb) @ _M1.T) @ _M2.T
++
++
++def oklab_to_rgb(lab):
++    return linear_to_srgb(((np.asarray(lab, dtype=float) @ _M2I.T) ** 3) @ _M1I.T)
++
++
++def in_gamut(rgb, eps=1e-4):
++    return bool(np.all(rgb >= -eps) and np.all(rgb <= 1 + eps))
++
++
++def lch(lab):
++    L, a, b = lab
++    return float(L), float(np.hypot(a, b)), float(np.degrees(np.arctan2(b, a)) % 360)
++
++
++def from_lch(L, C, h):
++    """OKLCH -> OKLab; out-of-gamut colours lose chroma, never hue or lightness."""
++    L = min(max(L, 0.0), 1.0)
++    C = max(C, 0.0)
++    hr = np.radians(h)
++    ab = lambda c: np.array([L, c * np.cos(hr), c * np.sin(hr)])
++    if in_gamut(oklab_to_rgb(ab(C))):
++        return ab(C)
++    lo, hi = 0.0, C
++    for _ in range(24):
++        mid = (lo + hi) / 2
++        lo, hi = (mid, hi) if in_gamut(oklab_to_rgb(ab(mid))) else (lo, mid)
++    return ab(lo)
++
++
++def from_hex(h):
++    h = h.lstrip("#")
++    return rgb_to_oklab(np.array([int(h[i:i + 2], 16) for i in (0, 2, 4)]) / 255)
++
++
++def to_hex(lab):
++    rgb = np.clip(oklab_to_rgb(lab), 0, 1)
++    return "".join(f"{round(v * 255):02x}" for v in rgb)
++
++
++def luminance(lab):
++    lin = srgb_to_linear(np.clip(oklab_to_rgb(lab), 0, 1))
++    return float(lin @ [0.2126, 0.7152, 0.0722])
++
++
++def contrast(a, b):
++    la, lb = sorted((luminance(a), luminance(b)), reverse=True)
++    return (la + 0.05) / (lb + 0.05)
++
++
++def hue_gap(h1, h2):
++    d = abs(h1 - h2) % 360
++    return min(d, 360 - d)
++
++
++def mix(a, b, t):
++    return (1 - t) * np.asarray(a, dtype=float) + t * np.asarray(b, dtype=float)
++
++
++def between(a, b, t=0.5):
++    """Colour between a and b the short way round the hue circle."""
++    La, Ca, ha = lch(a)
++    Lb, Cb, hb = lch(b)
++    ha = hb if Ca < 0.02 else ha
++    hb = ha if Cb < 0.02 else hb
++    dh = ((hb - ha + 180) % 360) - 180
++    return from_lch(La + (Lb - La) * t, Ca + (Cb - Ca) * t, ha + dh * t)
++
++
++def dist(a, b):
++    return float(np.linalg.norm(np.asarray(a) - np.asarray(b)))
++
++
++def opposite(lab):
++    """RGB inverse: yellow -> blue, light -> dark."""
++    return rgb_to_oklab(1 - np.clip(oklab_to_rgb(lab), 0, 1))
++
++
++def rotate(lab, degrees):
++    L, C, h = lch(lab)
++    return from_lch(L, C, (h + degrees) % 360)
++
++
++def circular_mean(h, w=None):
++    r = np.radians(np.asarray(h, dtype=float))
++    return float(np.degrees(np.arctan2(np.average(np.sin(r), weights=w),
++                                       np.average(np.cos(r), weights=w))) % 360)
++
++
++def max_chroma(L, h):
++    """Highest chroma sRGB can show at each lightness/hue (vectorised)."""
++    L, h = np.atleast_1d(L).astype(float), np.atleast_1d(h).astype(float)
++    hr = np.radians(h)
++    lo, hi = np.zeros_like(L), np.full_like(L, 0.4)
++    for _ in range(22):
++        mid = (lo + hi) / 2
++        ok = np.all(np.abs(oklab_to_rgb(np.stack([L, mid * np.cos(hr), mid * np.sin(hr)], -1)) - 0.5)
++                    <= 0.5 + 1e-4, -1)
++        lo, hi = np.where(ok, mid, lo), np.where(ok, hi, mid)
++    return lo
++
++
++BLACK = rgb_to_oklab(np.zeros(3))
++WHITE = rgb_to_oklab(np.ones(3))
++
++
++# ---------- 1. sample ----------
++
++def sample(px, rows, k=100):
++    """Up to k representative shades: deterministic k-means in OKLab."""
++    lab = rgb_to_oklab(px)
++    n = len(lab)
++    uniq = np.unique(np.round(lab, 3), axis=0)
++    k = int(min(k, len(uniq)))
++    rng = np.random.default_rng(0)
++    # k-means++ seeding on a fixed subsample, then Lloyd iterations on all
++    sub = lab[rng.choice(n, min(n, 6000), replace=False)]
++    centers = [sub[0]]
++    d2 = ((sub - centers[0]) ** 2).sum(1)
++    for _ in range(1, k):
++        if d2.sum() == 0:
++            break
++        c = sub[rng.choice(len(sub), p=d2 / d2.sum())]
++        centers.append(c)
++        d2 = np.minimum(d2, ((sub - c) ** 2).sum(1))
++    centers = np.array(centers)
++    x2 = (lab ** 2).sum(1)[:, None]
++    for _ in range(20):
++        dd = x2 + (centers ** 2).sum(1)[None] - 2 * lab @ centers.T
++        labels = np.argmin(dd, 1)
++        counts = np.bincount(labels, minlength=len(centers))
++        new = np.array([lab[labels == i].mean(0) if counts[i] else centers[i]
++                        for i in range(len(centers))])
++        if np.abs(new - centers).max() < 1e-4:
++            centers = new
++            break
++        centers = new
++    counts = np.bincount(labels, minlength=len(centers))
++    row_mean = np.bincount(labels, weights=rows, minlength=len(centers)) / np.maximum(counts, 1)
++    shades = []
++    for i, c in enumerate(centers):
++        share = counts[i] / n
++        if share < 0.001:
++            continue
++        L, C, h = lch(c)
++        shades.append({"lab": c, "L": L, "C": C, "h": h, "share": float(share),
++                       "row": float(row_mean[i])})
++    if shades:
++        rel = np.array([s["C"] for s in shades]) / np.maximum(
++            max_chroma([s["L"] for s in shades], [s["h"] for s in shades]), 1e-6)
++        for s, r in zip(shades, rel):
++            s["rel"] = float(r)
++    return sorted(shades, key=lambda s: -s["share"])
++
++
++# ---------- 2. organise ----------
++
++RELATIVE_CHROMA = 0.15   # share of the possible chroma that makes a shade "coloured"
++MIN_FAMILY = 0.015       # families under this share merge into a neighbour
++
++
++def organise(shades):
++    coloured = [s for s in shades if s["rel"] >= RELATIVE_CHROMA and s["C"] >= 0.02]
++    picked = {id(s) for s in coloured}
++    neutral = [s for s in shades if id(s) not in picked]
++
++    families = []
++    if coloured:
++        # Hue histogram (5 degree bins, weighted by screen share), smoothed;
++        # every bin climbs to its local peak: one family per basin.
++        hist = np.zeros(72)
++        for s in coloured:
++            hist[int(s["h"] // 5) % 72] += s["share"]
++        kern = np.exp(-0.5 * (np.arange(-6, 7) / 1.5) ** 2)    # 7.5 degree smoothing
++        sm = np.array([np.dot(hist[np.arange(i - 6, i + 7) % 72], kern) for i in range(72)])
++
++        def peak_of(i):
++            while True:
++                j = max((i - 1) % 72, i, (i + 1) % 72, key=lambda b: (sm[b], -abs(b - i)))
++                if j == i:
++                    return i
++                i = j
++        basins = {}
++        for s in coloured:
++            basins.setdefault(peak_of(int(s["h"] // 5) % 72), []).append(s)
++        groups = list(basins.values())
++        # merge slivers into the nearest family in hue
++        groups.sort(key=lambda g: -sum(s["share"] for s in g))
++        big = [g for g in groups if sum(s["share"] for s in g) >= MIN_FAMILY] or groups[:1]
++        for g in groups:
++            if any(g is b for b in big):
++                continue
++            gh = circular_mean([s["h"] for s in g], [s["share"] for s in g])
++            near = min(big, key=lambda b: hue_gap(gh, circular_mean([s["h"] for s in b],
++                                                                     [s["share"] for s in b])))
++            if hue_gap(gh, circular_mean([s["h"] for s in near], [s["share"] for s in near])) <= 40:
++                near.extend(g)
++            else:
++                neutral.extend(g)       # an isolated speck of colour is not a family
++        families = [family(g) for g in big]
++        families.sort(key=lambda f: -f["share"])
++
++    neutral.sort(key=lambda s: s["L"])
++    total_n = sum(s["share"] for s in neutral)
++    whites = [s for s in shades if s["L"] > 0.85 and s["C"] < 0.04]
++    w_share = sum(s["share"] for s in whites)
++    return {
++        "shades": shades,
++        "families": families,
++        "neutral": {"shades": neutral, "share": total_n,
++                    "hue": circular_mean([s["h"] for s in neutral], [s["share"] * s["C"] + 1e-9 for s in neutral])
++                    if neutral else 0.0},
++        "whites": {"share": w_share,
++                   "lab": np.average([s["lab"] for s in whites], axis=0, weights=[s["share"] for s in whites])
++                   if whites else WHITE},
++        "mean_L": float(sum(s["L"] * s["share"] for s in shades) / max(sum(s["share"] for s in shades), 1e-9)),
++    }
++
++
++def family(group):
++    """A hue family: its shades ordered by lightness form a real tonal ramp."""
++    group = sorted(group, key=lambda s: s["L"])
++    w = np.array([s["share"] for s in group])
++    L = np.array([s["L"] for s in group])
++    C = np.array([s["C"] for s in group])
++    h = np.array([s["h"] for s in group])
++    share = float(w.sum())
++    hue = circular_mean(h, w * C)
++    # chroma and hue the photo has at each lightness (bins of 0.1, filled)
++    bins = np.linspace(0.05, 0.95, 10)
++    idx = np.clip(np.digitize(L, bins) - 1, 0, 9)
++    c_at, h_at = np.full(10, np.nan), np.full(10, np.nan)
++    for i in range(10):
++        m = idx == i
++        if m.any():
++            # the more saturated end of what is there: what the eye remembers
++            order = np.argsort(C[m])
++            cw = np.cumsum(w[m][order]) / w[m].sum()
++            c_at[i] = C[m][order][np.searchsorted(cw, 0.7)]
++            h_at[i] = circular_mean(h[m], w[m] * C[m])
++    have = ~np.isnan(c_at)
++    c_at = np.interp(bins, bins[have], c_at[have])
++    # hue drift across lightness (shadows vs highlights), unwrapped round the mean
++    rel = ((h_at[have] - hue + 180) % 360) - 180
++    h_at = hue + np.interp(bins, bins[have], rel)
++    vivid_i = int(np.argmax(C * np.sqrt(w)))
++    order = np.argsort(C)
++    cw = np.cumsum(w[order]) / share
++    return {
++        "shades": group, "share": share, "hue": hue,
++        "L_range": (float(np.average(L, weights=w) - np.sqrt(np.cov(L, aweights=w) if len(L) > 1 else 0)),
++                    float(np.average(L, weights=w) + np.sqrt(np.cov(L, aweights=w) if len(L) > 1 else 0))),
++        "L_mean": float(np.average(L, weights=w)),
++        "lstd": float(np.sqrt(np.cov(L, aweights=w))) if len(L) > 1 else 0.0,
++        "C_vivid": float(C[order][np.searchsorted(cw, 0.85)]),
++        "vivid": group[vivid_i]["lab"],
++        "row": float(np.average([s["row"] for s in group], weights=w)),
++        "profile": {"L": bins, "C": c_at, "h": h_at},
++    }
++
++
++def tone(src, L, chroma=None, cap=None):
++    """A family's own shade at lightness L: the chroma and hue the photo has
++    for it there (or `chroma` if given), capped."""
++    if isinstance(src, dict):
++        C = float(np.interp(L, src["profile"]["L"], src["profile"]["C"])) if chroma is None else chroma
++        h = float(np.interp(L, src["profile"]["L"], src["profile"]["h"])) % 360
++    else:
++        _, C0, h = lch(src)
++        C = C0 if chroma is None else chroma
++    if cap is not None:
++        C = min(C, cap)
++    return from_lch(L, C, h)
++
++
++def hue_of(src):
++    return src["hue"] if isinstance(src, dict) else lch(src)[2]
++
++
++# ---------- 3. relate ----------
++
++def relate(scene):
++    fams = [f for f in scene["families"] if f["share"] >= 0.03]
++    pairs = []
++    for i, a in enumerate(fams):
++        for b in fams[i + 1:]:
++            d = hue_gap(a["hue"], b["hue"])
++            comp = max(0.0, 1 - abs(180 - d) / 50)          # 1 at exactly opposite
++            pairs.append({"a": a, "b": b, "gap": d, "complementary": comp,
++                          "score": comp * np.sqrt(a["share"] * b["share"])})
++    pairs.sort(key=lambda p: -p["score"])
++    hues = sorted(f["hue"] for f in fams)
++    if not fams:
++        kind = "monochrome"
++    elif len(fams) == 1:
++        kind = "single colour"
++    else:
++        # smallest arc that holds every family
++        gaps = [(hues[(i + 1) % len(hues)] - hues[i]) % 360 for i in range(len(hues))]
++        arc = 360 - max(gaps)
++        if pairs and pairs[0]["complementary"] >= 0.5:
++            kind = "complementary"
++        elif arc <= 90:
++            kind = "analogous"
++        elif len(fams) >= 3 and arc >= 200:
++            kind = "triadic"
++        else:
++            kind = "split-complementary"
++    return {"kind": kind, "pairs": pairs, "families": fams}
++
++
++# ---------- 3b. complete ----------
++#
++# A picture rarely holds a whole palette: green and black give two colours,
++# a theme needs six or more. Count the colours the picture does show, number
++# them, measure how far apart they are, then add the ones colour harmony asks
++# for: complements, split complements, analogous and triad hues.
++#
++# Harmony is measured on the painter's (RYB) wheel, where green faces rose/red
++# and yellow faces violet, not on OKLCH's, where green faces blue-violet.
++# Anchors: OKLCH hue of each RYB hue, measured from sRGB primaries.
++RYB_ANCHORS = np.array([(0, 29), (60, 53), (120, 110), (180, 142), (240, 264),
++                        (270, 294), (300, 328), (330, 365), (360, 389)], dtype=float)
++# relation, RYB offset, weight: how strongly harmony asks for that hue
++RELATIONS = [("complement", 180, 1.0), ("split complement", 150, 0.9), ("split complement", 210, 0.9),
++             ("triad", 120, 0.65), ("triad", 240, 0.65), ("analogous", 30, 0.75), ("analogous", -30, 0.75)]
++PALETTE_SIZE = 8
++MIN_RYB_GAP = 28          # two palette hues closer than this read as one colour
++MAX_PICTURE = 4           # picture colours kept as their own palette hues
++HUE_NAMES = [(5, "rose"), (29, "red"), (53, "orange"), (80, "ochre"), (110, "yellow"),
++             (125, "olive"), (142, "green"), (180, "teal"), (215, "cyan"), (250, "azure"),
++             (264, "blue"), (294, "violet"), (328, "magenta"), (350, "pink")]
++
++
++def to_ryb(h):
++    h = h % 360
++    if h < RYB_ANCHORS[0, 1]:
++        h += 360
++    return float(np.interp(h, RYB_ANCHORS[:, 1], RYB_ANCHORS[:, 0])) % 360
++
++
++def from_ryb(r):
++    return float(np.interp(r % 360, RYB_ANCHORS[:, 0], RYB_ANCHORS[:, 1])) % 360
++
++
++def ryb_gap(a, b):
++    return hue_gap(to_ryb(a), to_ryb(b))
++
++
++def hue_name(h):
++    return min(HUE_NAMES, key=lambda n: hue_gap(h, n[0]))[1]
++
++
++def highlights(scene):
++    """Every distinct colour the picture shows, most salient first: its hue
++    families, plus small vivid highlights organise() folded into the
++    neutrals (a red mouth, a yellow lamp)."""
++    out = [{"hue": f["hue"], "share": f["share"], "C": f["C_vivid"], "lab": f["vivid"],
++            "family": f} for f in scene["families"]]
++    specks = sorted((s for s in scene["neutral"]["shades"] if s.get("rel", 0) >= 0.3 and s["C"] >= 0.05),
++                    key=lambda s: -s["C"] * np.sqrt(s["share"]))
++    for s in specks:
++        same = next((o for o in out if hue_gap(o["hue"], s["h"]) <= 25), None)
++        if same is None:
++            out.append({"hue": s["h"], "share": s["share"], "C": s["C"], "lab": s["lab"], "family": None})
++        elif same["family"] is None:
++            same["share"] += s["share"]
++    for o in out:
++        o["salience"] = float(np.sqrt(o["share"]) * o["C"])
++    return sorted(out, key=lambda o: -o["salience"])
++
++
++def complete(scene, size=PALETTE_SIZE):
++    """Picture colours + the hues harmony asks for, numbered.
++
++    1. number the picture's colours by salience (H1, H2, ...), merging any two
++       closer than MIN_RYB_GAP on the painter's wheel
++    2. measure the gaps between them (painter's wheel, degrees)
++    3. every picture colour proposes its complement, split complements,
++       triad and analogous hues; candidates are scored by relation weight x
++       the parent's salience x their distance from hues already chosen, and
++       added greedily until the palette is full or nothing fits
++    A grey picture gets no hues: monochrome by design."""
++    hl = highlights(scene)
++    top = max((h["salience"] for h in hl), default=0) or 1
++    palette = []
++    for h in hl:
++        if len(palette) >= MAX_PICTURE:
++            break
++        if all(ryb_gap(h["hue"], p["hue"]) >= MIN_RYB_GAP for p in palette):
++            palette.append({"hue": h["hue"], "origin": "picture", "relation": None, "parent": None,
++                            "weight": h["salience"] / top, "C": h["C"], "share": h["share"],
++                            "family": h["family"]})
++    for i, p in enumerate(palette):
++        p["id"] = f"H{i + 1}"
++    gaps = [(a["id"], b["id"], round(ryb_gap(a["hue"], b["hue"])))
++            for i, a in enumerate(palette) for b in palette[i + 1:]]
++
++    pictured = list(palette)
++    while palette and len(palette) < size:
++        best = None
++        for p in pictured:
++            for rel_name, off, w in RELATIONS:
++                h = from_ryb(to_ryb(p["hue"]) + off)
++                d = min(ryb_gap(h, q["hue"]) for q in palette)
++                if d < MIN_RYB_GAP:
++                    continue
++                score = w * np.sqrt(p["weight"]) * min(1.0, d / 60)
++                if best is None or score > best[0]:
++                    best = (score, h, rel_name, p)
++        if best is None:
++            break
++        _, h, rel_name, p = best
++        palette.append({"hue": h, "origin": "made", "relation": rel_name, "parent": p["id"],
++                        "weight": float(best[0]), "C": p["C"], "share": 0.0, "family": None,
++                        "id": f"G{len(palette) - len(pictured) + 1}"})
++    for p in palette:
++        p["name"] = hue_name(p["hue"])
++    return {"colours": palette, "gaps": gaps}
++
++
++def palette_lab(entry, L=0.70, C=0.12):
++    """A palette hue as a colour: the picture's own shade where it has one."""
++    if entry.get("family") is not None:
++        return tone(entry["family"], L, chroma=C)
++    return from_lch(L, C, entry["hue"])
++
++
++# ---------- 4. roles ----------
++
++FLAT_SHARE = 0.6
++
++# surface ladder, offsets from the page (dark themes go up, light ones down)
++SURFACE_STEPS = {"player": -0.05, "sidebar": -0.025, "page": 0.0, "elevated": 0.045,
++                 "card": 0.055, "highlight": 0.09, "pressed": 0.12, "misc": 0.16}
++# accent ramp: tones (lightness) for container .. on-container
++ACCENT_TONES_DARK = {"container": 0.38, "strong": 0.64, "main": 0.80, "soft": 0.87, "on": 0.94}
++ACCENT_TONES_LIGHT = {"container": 0.90, "strong": 0.58, "main": 0.50, "soft": 0.42, "on": 0.25}
++
++
++def coolness(h):
++    """1 for blue-violet (what good dark surfaces use), down to 0.2 for warm/green."""
++    if 215 <= h <= 315:
++        return 1.0
++    if 190 <= h < 215 or 315 < h <= 340:
++        return 0.6
++    return 0.2
++
++
++def design(scene, rel, desktop_primary=None):
++    fams = scene["families"]
++    neutral = scene["neutral"]
++    top = fams[0] if fams else None
++    flat = bool(top and top["share"] >= FLAT_SHARE and top["lstd"] < 0.06)
++    flat_neutral = (not flat and neutral["share"] >= FLAT_SHARE and fams == [] and
++                    np.std([s["L"] for s in neutral["shades"]]) < 0.06) if neutral["shades"] else False
++    log = []
++    pal = complete(scene)
++    if pal["colours"]:
++        log.append("palette: " + ", ".join(
++            f"{c['id']} {c['name']} {c['hue']:.0f}°" + (f" ({c['relation']} of {c['parent']})" if c["parent"] else "")
++            for c in pal["colours"]))
++
++    def harmony_pick(*taken, want=None):
++        """The palette hue harmony ranks highest that is not already taken
++        (MIN_RYB_GAP apart from each taken hue). want=(hue, degrees) prefers
++        the hue closest to that painter's-wheel distance from `hue`."""
++        free = [c for c in pal["colours"] if all(ryb_gap(c["hue"], t) >= MIN_RYB_GAP for t in taken)]
++        if not free:
++            return None
++        if want:
++            h0, deg = want
++            c = min(free, key=lambda c: (round(abs(deg - ryb_gap(c["hue"], h0)) / 20), -c["weight"]))
++        else:
++            c = max(free, key=lambda c: min((ryb_gap(c["hue"], t) for t in taken), default=180) / 180
++                    + 0.3 * c["weight"])
++        return palette_lab(c)
++
++    # how much bright, colourful content the picture has (0..1): sunlit fur,
++    # neon, a sunset. Bright pictures get a livelier page, header and accents.
++    bright = sum(sh["share"] for f in fams for sh in f["shades"] if sh["L"] >= 0.62 and sh["C"] >= 0.07)
++    glow = float(min(1.0, bright / 0.20))      # 20% of the screen bright and vivid = full glow
++
++    # ---- mode ----
++    if flat:
++        base_lab = tone(top, top["L_mean"])
++        light = contrast(base_lab, BLACK) >= contrast(base_lab, WHITE)
++    else:
++        light = scene["mean_L"] >= 0.62
++    up = -1 if light else 1
++    ink = BLACK if light else WHITE
++    log.append(f"mode: {'light' if light else 'dark'} (picture lightness {scene['mean_L']:.2f}{', flat' if flat else ''})")
++
++    # ---- surface family ----
++    if flat:
++        surface_src, cap = top, 1.0
++        page = np.array(tone(top, top["L_mean"], chroma=float(np.median([s['C'] for s in top['shades']]))))
++        page_L = lch(page)[0]
++        log.append("surface: the flat colour itself, exactly")
++    else:
++        cands = [(f["share"] * (coolness(f["hue"]) if not light else 1.0), f) for f in fams]
++        cands.append((neutral["share"] * 0.5, "neutral"))
++        score, pick = max(cands, key=lambda c: c[0])
++        if pick == "neutral" or not fams:
++            surface_src = from_lch(0.5, 0.01, neutral["hue"])
++            cap = 0.01
++        else:
++            surface_src = pick
++            cap = (0.016 if light else 0.034) if (light or coolness(pick["hue"]) >= 0.6) else 0.012
++        page_L = 0.965 if light else float(np.clip(0.20 + 0.10 * scene["mean_L"] + 0.05 * glow, 0.22, 0.31))
++        cap = cap * (1 + 0.25 * glow) if not light else cap
++        page = tone(surface_src, page_L, cap=cap)
++        log.append(f"surface: {'neutral' if pick == 'neutral' else 'family at %d°' % surface_src['hue']}"
++                   f", chroma budget {cap:.3f}, page L {page_L:.3f}")
++
++    surfaces = {}
++    for name, off in SURFACE_STEPS.items():
++        L = page_L + up * off
++        if flat:
++            _, C, h = lch(page)
++            surfaces[name] = from_lch(L, C * (1 - 0.15 * abs(off) / 0.16), h)
++        else:
++            surfaces[name] = tone(surface_src, L, cap=cap * (1 + 0.3 * max(off, 0) / 0.16))
++    surfaces["page"] = page
++
++    # ---- accents ----
++    accent_cands = [f for f in fams if f is not surface_src]
++    def salience(f):
++        return np.sqrt(f["share"]) * f["C_vivid"]
++    primary = None
++    if desktop_primary is not None and not flat:
++        dh = lch(desktop_primary)[2]
++        near = [f for f in accent_cands if hue_gap(f["hue"], dh) <= 35]
++        if near:
++            fam = max(near, key=salience)
++            # the bar, btop and window borders already show matugen's take on
++            # this colour: keep the family's shades but use the desktop's hue
++            primary = {**fam, "hue": dh,
++                       "profile": {**fam["profile"], "h": np.full_like(fam["profile"]["h"], dh)}}
++            primary["_family"] = fam
++            log.append(f"primary: family at {fam['hue']:.0f}°, in the desktop's hue {dh:.0f}°")
++    synthetic = []
++    if flat:
++        # the user's rule for one colour: opposite, complementary, colours in between
++        base = page
++        prim = opposite(base)
++        sec = from_lch(*lch(base)[:2], from_ryb(to_ryb(lch(base)[2]) + 180))
++        if hue_gap(lch(prim)[2], lch(sec)[2]) < 40 or lch(prim)[1] < 0.04:
++            sec = max((rotate(base, 150), rotate(base, 210)), key=lambda c: hue_gap(lch(c)[2], lch(prim)[2]))
++        others = [f for f in accent_cands]
++        if others:            # a flat field with real second colours: use them first
++            prim = max(others, key=salience)
++            rest = [f for f in others if f is not prim]
++            sec = max(rest, key=lambda f: max(0, 1 - abs(180 - hue_gap(f["hue"], hue_of(prim))) / 90) + salience(f)) \
++                if rest else rotate(prim["vivid"], 180)
++        ter = between(base, prim if not isinstance(prim, dict) else prim["vivid"])
++        accents_src = [prim, sec, ter]
++        log.append("accents: flat-colour rule (opposite, complementary, in between)")
++    else:
++        if primary is None:
++            primary = max(accent_cands, key=salience) if accent_cands else None
++        if primary is None:
++            # nothing but the surface colour: opposite and complementary of it
++            base_lab = surface_src["vivid"] if isinstance(surface_src, dict) else surface_src
++            if lch(base_lab)[1] < 0.03:
++                primary = from_lch(0.7, 0.0, 0.0)
++                synthetic.append("primary")
++            else:
++                primary = harmony_pick(lch(base_lab)[2], want=(lch(base_lab)[2], 180))
++                if primary is None:
++                    primary = rotate(base_lab, 180)
++                synthetic.append("primary")
++        ph = hue_of(primary)
++        rest = [f for f in accent_cands if f is not primary and f is not primary.get("_family") ] \
++            if isinstance(primary, dict) else list(accent_cands)
++        # secondary: closest to the primary's opposite, weighted by presence
++        def opp_score(f):
++            return max(0.0, 1 - abs(180 - hue_gap(f["hue"], ph)) / 90) * np.sqrt(f["share"]) + 0.2 * salience(f)
++        sec = max(rest, key=opp_score) if rest else None
++        if sec is None or hue_gap(sec["hue"], ph) < 40:
++            pv = primary["vivid"] if isinstance(primary, dict) else primary
++            sec = None
++            if desktop_primary is not None:
++                # the bar, btop and window borders already show matugen's
++                # accent: if it sits on the far side of the wheel, it is the
++                # opposite colour this picture needs
++                Ld, Cd, dh = lch(desktop_primary)
++                if Cd >= 0.03 and ryb_gap(dh, ph) >= 120:
++                    sec = from_lch(0.7, 0.12, dh)
++                    log.append(f"secondary: the desktop's accent {dh:.0f}° (opposite the primary)")
++            if sec is None:
++                # the painter's complement: green -> rose, yellow -> violet
++                sec = harmony_pick(ph, want=(ph, 180))
++            if sec is None:
++                sec = rotate(pv, 180)
++            synthetic.append("secondary")
++        sh = hue_of(sec)
++        rest = [f for f in rest if f is not sec]
++        # tertiary: the remaining family furthest from both (triad-like)
++        def ter_score(f):
++            return min(hue_gap(f["hue"], ph), hue_gap(f["hue"], sh)) / 180 + salience(f) * 2
++        # a real wallpaper colour beats an invented one, even fairly close in
++        # hue: the adjustment pass keeps it apart by lightness
++        ter = max([f for f in rest if min(hue_gap(f["hue"], ph), hue_gap(f["hue"], sh)) >= 20],
++                  key=ter_score, default=None)
++        if ter is None:
++            pv = primary["vivid"] if isinstance(primary, dict) else primary
++            ter = harmony_pick(ph, sh)
++            if ter is None:
++                cand = [rotate(pv, 120), rotate(pv, -120)]
++                ter = max(cand, key=lambda c: hue_gap(lch(c)[2], sh))
++            synthetic.append("tertiary")
++        accents_src = [primary, sec, ter]
++        log.append(f"accents: {', '.join('%s %.0f°%s' % (n, hue_of(s), ' (made up)' if n in synthetic else '') for n, s in zip(('primary', 'secondary', 'tertiary'), accents_src))}")
++
++    # balanced chroma: every accent's main tone gets the same perceived
++    # vividness (median of what the photo offers, kept in a pleasant band)
++    vivid_C = [s["C_vivid"] if isinstance(s, dict) else lch(s)[1] for s in accents_src]
++    target_C = float(np.clip(np.median([c for c in vivid_C if c > 0.02] or [0.1]) * 1.6, 0.09, 0.15 + 0.02 * glow))
++    if lch(page)[1] < 0.02 and all(c < 0.03 for c in vivid_C):
++        target_C = 0.0     # grey picture: monochrome by design
++    tones = ACCENT_TONES_LIGHT if light else ACCENT_TONES_DARK
++    ramps = {}
++    for name, src in zip(("primary", "secondary", "tertiary"), accents_src):
++        ramp = {}
++        for tname, L in tones.items():
++            c = target_C * (0.45 if tname in ("container", "on") else 1.0)
++            ramp[tname] = tone(src, L, chroma=c)
++        ramps[name] = ramp
++    ramps["error"] = {t: from_lch(L, target_C * (0.45 if t in ("container", "on") else 1.0) or 0.12, 25)
++                      for t, L in tones.items()}
++
++    # ---- adjustment pass ----
++    # accents must stand out from the page and the cards (3:1) ...
++    for name, ramp in ramps.items():
++        for _ in range(40):
++            m = ramp["main"]
++            if min(contrast(m, page), contrast(m, surfaces["card"])) >= 3.0:
++                break
++            L, C, h = lch(m)
++            ramp["main"] = from_lch(L + up * 0.01, C, h)
++    # ... and from each other (minimum OKLab distance between main tones)
++    names = ["primary", "secondary", "tertiary"]
++    for i, n in enumerate(names):
++        for _ in range(8):
++            close = [o for o in names[:i] if dist(ramps[n]["main"], ramps[o]["main"]) < 0.06]
++            if not close:
++                break
++            L, C, h = lch(ramps[n]["main"])
++            ramps[n]["main"] = from_lch(L + up * 0.04, C, h)
++            log.append(f"adjust: {n} lightened to stay apart from {close[0]}")
++    # error must not look like an accent
++    # (a rose accent sits next to red: step the hue a little either way, and if
++    # that is not enough change the lightness, so the error still reads as red)
++    L0, C0, h0 = lch(ramps["error"]["main"])
++    def apart(c):
++        return min(dist(c, ramps[o]["main"]) for o in names)
++    tries = [from_lch(L0 + dl, C0, (h0 + dh) % 360)
++             for dl in (0.0, -0.08, -0.14) for dh in (0, 8, -8, 16, -16)]
++    ok = [c for c in tries if apart(c) >= 0.07]
++    ramps["error"]["main"] = ok[0] if ok else max(tries, key=apart)
++
++    # ---- text ----
++    if not light and not flat and scene["whites"]["share"] >= 0.01:
++        _, Cw, hw = lch(scene["whites"]["lab"])
++        text0 = from_lch(0.95, min(Cw, 0.02), hw)
++        log.append("text: tinted with the picture's own white")
++    else:
++        Lt, Ct, ht = lch(mix(opposite(page), ink, 0.8))
++        text0 = from_lch(Lt, min(Ct, 0.035), ht)
++        log.append("text: the page's opposite colour mixed with " + ("black" if light else "white"))
++
++    def reach(color, bgs, target):
++        for t in np.linspace(0, 1, 41):
++            c = mix(color, ink, t)
++            if all(contrast(c, b) >= tg for b, tg in zip(bgs, target)):
++                return c
++        return np.array(ink)
++    text = reach(text0, [page, surfaces["pressed"]], [7.0, 4.5])
++    subtext = reach(mix(text, page, 0.35), [page, surfaces["highlight"]], [4.5, 4.5])
++    disabled = mix(page, subtext, 0.45)
++
++    # header gradient: the picture's most expressive colour (big, vivid and
++    # bright), as a real, clearly brighter shade of it, fading into the page;
++    # like Spotify's own album headers, but from the wallpaper
++    if fams and not flat:
++        def expressive(f):
++            lit = sum(sh["share"] for sh in f["shades"] if sh["L"] >= 0.55)
++            return (f["share"] + 2 * lit) * f["C_vivid"]
++        glow_fam = max(fams, key=expressive)
++        g_L = page_L + up * (0.14 + 0.16 * glow)
++        g_C = float(np.interp(g_L, glow_fam["profile"]["L"], glow_fam["profile"]["C"]))
++        gradient_top = tone(glow_fam, g_L, chroma=float(np.clip(g_C * 1.4, 0.05, 0.08 + 0.07 * glow)))
++        log.append(f"header: family at {glow_fam['hue']:.0f}°, L {g_L:.2f} (picture glow {glow:.2f})")
++    else:
++        glow_fam = None
++        gradient_top = surfaces["highlight"]
++
++    return {
++        "light": light, "flat": flat, "kind": rel["kind"], "log": log,
++        "surfaces": surfaces, "ramps": ramps, "text": text, "subtext": subtext, "disabled": disabled,
++        "gradient_top": gradient_top, "accent_src": accents_src, "surface_src": surface_src,
++        "synthetic": synthetic, "palette": pal,
++    }
++
++
++def checks(d):
++    """Contrast table for the inspection sheet."""
++    s, r = d["surfaces"], d["ramps"]
++    rows = [("text on page", contrast(d["text"], s["page"]), 7.0),
++            ("text on hover", contrast(d["text"], s["pressed"]), 4.5),
++            ("subtext on page", contrast(d["subtext"], s["page"]), 4.5),
++            ("subtext on hover", contrast(d["subtext"], s["highlight"]), 4.5)]
++    for n in ("primary", "secondary", "tertiary", "error"):
++        rows.append((f"{n} on page", contrast(r[n]["main"], s["page"]), 3.0))
++        rows.append((f"{n} on card", contrast(r[n]["main"], s["card"]), 3.0))
++    return rows
+diff --git a/dots/.config/matugen/templates/wallpaper-theme/preview.py b/dots/.config/matugen/templates/wallpaper-theme/preview.py
+new file mode 100644
+index 00000000..fc5b11c5
+--- /dev/null
++++ b/dots/.config/matugen/templates/wallpaper-theme/preview.py
+@@ -0,0 +1,239 @@
++"""Inspection sheet: the wallpaper, a Spotify replica painted with the
++generated roles, and every stage of the design procedure."""
++
++import base64
++import html
++import io
++import os
++
++import numpy as np
++
++from design import contrast, hue_gap, lch, palette_lab, to_hex
++
++
++def _img_uri(img, width, quality=82):
++    im = img.copy()
++    im.thumbnail((width, width))
++    buf = io.BytesIO()
++    im.convert("RGB").save(buf, "JPEG", quality=quality)
++    return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode()
++
++
++def _covers(img, n=10):
++    """Square crops of the wallpaper, used as album art in the replica."""
++    w, h = img.size
++    side = min(w, h) // 3
++    out = []
++    for i in range(n):
++        x = int((w - side) * ((i * 0.37) % 1))
++        y = int((h - side) * ((i * 0.61) % 1))
++        out.append(_img_uri(img.crop((x, y, x + side, y + side)), 220, 75))
++    return out
++
++
++def _sw(lab, label="", size=28, title=""):
++    hx = to_hex(lab)
++    tip = html.escape(title or f"#{hx}")
++    return (f'<div class="sw" style="background:#{hx};width:{size}px;height:{size}px" title="{tip}">'
++            f'{html.escape(label)}</div>')
++
++
++def write(path, image, scene, rel, d, roles, checks, btop=None):
++    from PIL import Image
++    import wallpaper_view
++
++    name = os.path.basename(image) if image else "colour"
++    if image:
++        view = wallpaper_view.visible(Image.open(image).convert("RGB"))
++        wall = _img_uri(view, 900)
++        covers = _covers(view)
++    else:
++        wall, covers = "", [""] * 10
++    v = {k: "#" + to_hex(c) for k, c in roles.items()}
++    css_vars = ";".join(f"--{k}:{c}" for k, c in v.items())
++    r = d["ramps"]
++
++    def rgb(k):
++        h = v[k].lstrip("#")
++        return ",".join(str(int(h[i:i + 2], 16)) for i in (0, 2, 4))
++
++    # ---- design sheet parts ----
++    fams = scene["families"]
++    order = []
++    for f in sorted(fams, key=lambda f: f["hue"]):
++        order += f["shades"]
++    order += scene["neutral"]["shades"]
++    shades_html = "".join(_sw(s["lab"], size=18, title=f"#{to_hex(s['lab'])}  L{s['L']:.2f} C{s['C']:.3f} h{s['h']:.0f}  {s['share']:.1%}")
++                          for s in order)
++    share_bar = "".join(f'<div style="background:#{to_hex(s["lab"])};flex:{s["share"]:.4f}"></div>' for s in order)
++    fam_html = ""
++    for f in fams:
++        tag = " — page" if f is d["surface_src"] else ""
++        if any(f is (a.get("_family", a) if isinstance(a, dict) else None) for a in d["accent_src"]):
++            idx = next(i for i, a in enumerate(d["accent_src"]) if isinstance(a, dict) and a.get("_family", a) is f)
++            tag += " — " + ("primary", "secondary", "tertiary")[idx]
++        fam_html += (f'<div class="row"><div class="lbl">{f["hue"]:.0f}° · {f["share"]:.0%}{tag}</div>'
++                     + "".join(_sw(s["lab"], size=22, title=f"L{s['L']:.2f} C{s['C']:.3f} {s['share']:.1%}") for s in f["shades"])
++                     + "</div>")
++    if scene["neutral"]["shades"]:
++        fam_html += ('<div class="row"><div class="lbl">neutral · %.0f%%</div>' % (100 * scene["neutral"]["share"])
++                     + "".join(_sw(s["lab"], size=22) for s in scene["neutral"]["shades"]) + "</div>")
++    pairs_html = "".join(
++        f'<div class="row">{_sw(p["a"]["vivid"], size=22)}{_sw(p["b"]["vivid"], size=22)}'
++        f'<div class="lbl2">{p["a"]["hue"]:.0f}° ↔ {p["b"]["hue"]:.0f}° · gap {p["gap"]:.0f}° · '
++        f'complementary {p["complementary"]:.2f}</div></div>' for p in rel["pairs"][:5]) or "<div>no pairs</div>"
++    surf_html = "".join(_sw(c, k, 64) for k, c in d["surfaces"].items())
++    ramp_html = ""
++    for n in ("primary", "secondary", "tertiary", "error"):
++        ramp_html += f'<div class="row"><div class="lbl">{n}{" (made up)" if n in d["synthetic"] else ""}</div>' + \
++            "".join(_sw(c, t, 64) for t, c in r[n].items()) + "</div>"
++    text_html = "".join(_sw(c, k, 64) for k, c in (("text", d["text"]), ("subtext", d["subtext"]),
++                                                     ("disabled", d["disabled"]), ("gradient", d["gradient_top"])))
++    check_html = "".join(f'<tr><td>{html.escape(n)}</td><td>{c:.1f}:1</td><td>{t:.1f}:1</td>'
++                         f'<td class="{"ok" if c >= t else "bad"}">{"ok" if c >= t else "FAIL"}</td></tr>'
++                         for n, c, t in checks)
++    log_html = "".join(f"<li>{html.escape(x)}</li>" for x in d["log"])
++    pal = d.get("palette", {"colours": [], "gaps": []})
++    pal_html = "".join(
++        f'<div class="row">{_sw(palette_lab(c), c["id"], 40)}<div class="lbl2">{c["id"]} · {c["name"]} {c["hue"]:.0f}° · '
++        + (f'picture, {c["share"]:.0%} of the screen' if c["origin"] == "picture"
++           else f'{c["relation"]} of {c["parent"]}') + '</div></div>'
++        for c in pal["colours"]) or "<div>grey picture: no hues (monochrome by design)</div>"
++    pal_html += ('<div class="lbl2" style="margin-top:6px">gaps (painter\'s wheel): ' +
++                 (", ".join(f"{a}–{b} {g}°" for a, b, g in pal["gaps"]) or "one picture colour") + "</div>")
++    btop_html = ""
++    if btop:
++        groups = [("ui", ["main_fg", "hi_fg", "selected_bg", "selected_fg", "inactive_fg", "graph_text", "meter_bg", "div_line"]),
++                  ("boxes", ["cpu_box", "mem_box", "net_box", "proc_box", "proc_misc"]),
++                  ("temp", ["temp_start", "temp_mid", "temp_end"])] + \
++                 [(n, [f"{n}_start", f"{n}_mid", f"{n}_end"]) for n in
++                  ("cpu", "free", "cached", "available", "used", "download", "upload", "process")]
++        btop_html = "".join(f'<div class="row"><div class="lbl">{g}</div>' +
++                            "".join(_sw(btop[k], k.split("_", 1)[-1] if g not in ("ui", "boxes") else k, 54) for k in keys)
++                            + "</div>" for g, keys in groups)
++
++    # ---- Spotify replica ----
++    lib = "".join(f'<div class="lib-item"><img src="{covers[i]}"><div><div class="t">{t}</div>'
++                  f'<div class="s">{s}</div></div></div>'
++                  for i, (t, s) in enumerate([("Liked Songs", "Playlist · 412 songs"), ("Ticket to Hell", "Playlist · tak"),
++                                              ("НЕ КРИК НА ВУХО", "Playlist · tak"), ("Metalcore Mix", "Made for you"),
++                                              ("Ambient", "Playlist · Elder Evil"), ("Drudkh", "Artist"),
++                                              ("Release Radar", "Made for you")]))
++    shortcuts = "".join(f'<div class="short"><img src="{covers[i + 2]}"><span>{t}</span>'
++                        f'{"<i class=eq></i>" if i == 0 else ""}</div>'
++                        for i, t in enumerate(["Ticket to Hell", "НЕ КРИК НА ВУХО", "NEXT!", "Guardians of the Galaxy",
++                                               "Daily Mix 1", "Discover Weekly", "Liked Songs", "On Repeat"]))
++    cards = "".join(f'<div class="card{" hover" if i == 1 else ""}"><div class="art"><img src="{covers[i + 4]}">'
++                    f'{"<div class=play>▶</div>" if i == 1 else ""}</div><div class="t">{t}</div><div class="s">{s}</div></div>'
++                    for i, (t, s) in enumerate([("Metalcore Mix", "Spiritbox, NOTHING MORE, Thornhill"),
++                                                ("Metal Mix", "Leprous, VOLA, Sleep Token"),
++                                                ("Discover Weekly", "Your weekly mixtape"),
++                                                ("Daily Mix 2", "Drudkh, Wolves in the Throne Room"),
++                                                ("Chill Mix", "Bonobo, Tycho, Emancipator")]))
++    tracks = "".join(f'<div class="track{" playing" if i == 1 else ""}{" hover" if i == 3 else ""}">'
++                     f'<span class="n">{"<i class=eq></i>" if i == 1 else i + 1}</span><img src="{covers[i]}">'
++                     f'<div class="tt"><div class="t">{t}</div><div class="s">{a}</div></div>'
++                     f'<span class="s">{al}</span><span class="like">{"✓" if i in (1, 4) else ""}</span>'
++                     f'<span class="s">{du}</span></div>'
++                     for i, (t, a, al, du) in enumerate([("Blessings", "Adelyn", "Blessings", "3:29"),
++                                                         ("Days that Passed", "Drudkh", "Microcosmos", "6:12"),
++                                                         ("VirUS", "Caliban, Heaven Shall Burn", "Back from Hell", "3:55"),
++                                                         ("In Waves", "Trivium", "In Waves", "5:02"),
++                                                         ("Awake", "Lost Society", "If the Sky Came Down", "4:11")]))
++
++    page = f"""<!doctype html><html><head><meta charset="utf-8">
++<title>{html.escape(name)} · wallpaper theme</title>
++<style>
++:root{{{css_vars}}}
++*{{box-sizing:border-box}} body{{margin:0;background:#101114;color:#ddd;font:14px "Google Sans Flex","Rubik",system-ui,sans-serif}}
++h1{{font-size:20px;margin:18px 24px 4px}} .sub{{margin:0 24px 14px;color:#999}}
++.top{{display:flex;gap:18px;padding:0 24px;align-items:flex-start;flex-wrap:wrap}}
++.wall{{width:430px;border-radius:10px}}
++.sheet{{padding:8px 24px 40px;display:grid;grid-template-columns:repeat(auto-fit,minmax(540px,1fr));gap:22px}}
++.sheet section{{background:#18191d;border-radius:10px;padding:14px 16px}} .sheet h2{{font-size:14px;margin:0 0 10px;color:#bbb}}
++.sw{{display:inline-flex;align-items:flex-end;justify-content:center;border-radius:4px;margin:1px;font-size:10px;color:#fff;text-shadow:0 0 3px #000;overflow:hidden}}
++.row{{display:flex;align-items:center;flex-wrap:wrap;margin:3px 0}} .lbl{{width:170px;font-size:12px;color:#aaa}} .lbl2{{font-size:12px;color:#aaa;margin-left:8px}}
++.bar{{display:flex;height:22px;border-radius:5px;overflow:hidden;margin-top:8px}}
++table{{border-collapse:collapse;font-size:12px}} td{{padding:2px 10px 2px 0}} .ok{{color:#8c8}} .bad{{color:#e66;font-weight:bold}}
++/* ---- Spotify replica ---- */
++.sp{{width:1180px;height:720px;background:var(--player);border-radius:10px;display:grid;grid-template-columns:280px 1fr 300px;
++  grid-template-rows:56px 1fr 72px 24px;gap:8px;padding:0 8px;color:var(--text);overflow:hidden;font-size:13px}}
++.sp img{{display:block;object-fit:cover}}
++.topbar{{grid-column:1/4;display:flex;align-items:center;gap:10px}}
++.dots{{color:var(--subtext);letter-spacing:2px;width:60px}}
++.home{{width:44px;height:44px;border-radius:50%;background:var(--main-elevated);display:grid;place-items:center;margin-left:300px}}
++.search{{flex:0 0 420px;height:44px;border-radius:22px;background:var(--main-elevated);color:var(--subtext);display:flex;align-items:center;padding:0 18px}}
++.avatar{{margin-left:auto;width:32px;height:32px;border-radius:50%;background:var(--secondary);border:4px solid var(--main-elevated)}}
++.panel{{background:var(--main);border-radius:8px;overflow:hidden;position:relative}}
++.side{{background:var(--sidebar);padding:14px 10px}}
++.side h3{{margin:2px 6px 12px;font-size:14px}}
++.chips{{display:flex;gap:8px;margin:0 0 12px}} .chip{{padding:6px 12px;border-radius:16px;background:rgba({rgb('secondary')},.16);font-size:12px}}
++.chip.on{{background:var(--text);color:var(--main)}}
++.lib-item{{display:flex;gap:10px;align-items:center;padding:6px;border-radius:6px}} .lib-item:nth-child(2){{background:var(--highlight)}}
++.lib-item img{{width:44px;height:44px;border-radius:4px}} .t{{font-weight:600}} .s{{color:var(--subtext);font-size:12px}}
++.mainv{{padding:0}} .mainv .head{{background:linear-gradient(var(--gradient-top) 0,var(--main) 100%);padding:16px 20px 28px}}
++.shorts{{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:4px}}
++.short{{display:flex;align-items:center;gap:10px;height:48px;border-radius:5px;background:rgba({rgb('text')},.08);overflow:hidden;font-weight:600;font-size:12px;position:relative}}
++.short img{{width:48px;height:48px}} .short .eq{{position:absolute;right:8px}}
++.eq{{display:inline-block;width:12px;height:12px;background:linear-gradient(90deg,var(--tertiary) 0 20%,transparent 20% 40%,var(--tertiary) 40% 60%,transparent 60% 80%,var(--tertiary) 80%);clip-path:polygon(0 30%,20% 30%,20% 100%,40% 100%,40% 0,60% 0,60% 100%,80% 100%,80% 55%,100% 55%,100% 100%,0 100%)}}
++.shelf{{padding:6px 20px}} .shelf h2{{font-size:20px;margin:6px 0 8px;display:flex;justify-content:space-between}} .shelf h2 span{{font-size:12px;color:var(--subtext)}}
++.cards{{display:flex;gap:10px}} .card{{width:150px;padding:8px;border-radius:6px}} .card.hover{{background:var(--highlight)}}
++.art{{position:relative}} .art img{{width:134px;height:134px;border-radius:6px}}
++.play{{position:absolute;right:6px;bottom:6px;width:40px;height:40px;border-radius:50%;background:var(--button);color:var(--main);display:grid;place-items:center;font-size:15px;box-shadow:0 6px 12px rgba(0,0,0,.35)}}
++.card .t{{margin-top:8px;font-size:13px}}
++.tracks{{padding:0 20px}} .track{{display:grid;grid-template-columns:24px 36px 1fr 150px 20px 40px;gap:10px;align-items:center;padding:5px 8px;border-radius:5px}}
++.track img{{width:36px;height:36px;border-radius:3px}} .track.hover{{background:var(--highlight)}}
++.track.playing .t{{color:var(--tertiary)}} .n{{color:var(--subtext);text-align:center}} .like{{color:var(--button)}}
++.right{{padding:14px}} .right h3{{font-size:14px;margin:0 0 12px}}
++.right .cover{{width:100%;aspect-ratio:1;border-radius:8px}}
++.np{{display:flex;justify-content:space-between;align-items:center;margin:12px 0}} .np .t{{font-size:20px;font-weight:700}}
++.badge{{width:20px;height:20px;border-radius:50%;background:var(--button);color:var(--main);display:grid;place-items:center;font-size:12px}}
++.lyrics{{border-radius:8px;padding:12px;background:var(--secondary-container)}} .lyrics .h{{font-size:12px;font-weight:600}}
++.lyrics p{{margin:6px 0 0;font-size:17px;font-weight:700;color:var(--text)}} .lyrics p+p{{opacity:.55}}
++.player{{grid-column:1/4;display:flex;align-items:center;gap:12px;padding:0 8px}}
++.player img{{width:52px;height:52px;border-radius:4px}}
++.ctrl{{margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:6px;width:520px}}
++.btns{{display:flex;gap:22px;align-items:center;color:var(--subtext)}} .btns .on{{color:var(--button)}}
++.pp{{width:34px;height:34px;border-radius:50%;background:var(--text);color:var(--player);display:grid;place-items:center}}
++.prog{{display:flex;align-items:center;gap:8px;width:100%;font-size:11px;color:var(--subtext)}}
++.track-bar{{flex:1;height:4px;border-radius:2px;background:rgba({rgb('text')},.25)}} .track-bar i{{display:block;width:38%;height:100%;border-radius:2px;background:var(--button)}}
++.connect{{grid-column:1/4;background:var(--button);color:var(--main);font-size:12px;font-weight:700;display:flex;justify-content:flex-end;align-items:center;padding:0 12px;border-radius:6px 6px 0 0}}
++</style></head><body>
++<h1>{html.escape(name)}</h1>
++<div class="sub">{d['kind']} scheme · {"light" if d['light'] else "dark"} · {len(scene['shades'])} shades sampled · {len(fams)} colour famil{"y" if len(fams) == 1 else "ies"}</div>
++<div class="top">
++  {f'<img class="wall" src="{wall}" title="what is on screen">' if wall else ''}
++  <div class="sp">
++    <div class="topbar"><span class="dots">•••</span><div class="home">⌂</div><div class="search">What do you want to play?</div><div class="avatar"></div></div>
++    <div class="panel side"><h3>Your Library</h3><div class="chips"><span class="chip on">Playlists</span><span class="chip">Artists</span><span class="chip">Albums</span></div>{lib}</div>
++    <div class="panel mainv">
++      <div class="head"><div class="chips"><span class="chip on">All</span><span class="chip">Music</span><span class="chip">Podcasts</span><span class="chip">Audiobooks</span></div>
++      <div class="shorts">{shortcuts}</div></div>
++      <div class="shelf"><h2>Your top mixes <span>Show all</span></h2><div class="cards">{cards}</div></div>
++      <div class="shelf"><h2>Recently played <span>Show all</span></h2></div><div class="tracks">{tracks}</div>
++    </div>
++    <div class="panel right"><h3>Ticket to Hell</h3><img class="cover" src="{covers[1]}">
++      <div class="np"><div><div class="t">Days that Passed</div><div class="s">Drudkh</div></div><div class="badge">✓</div></div>
++      <div class="lyrics"><div class="h">Lyrics preview</div><p>Through the falling leaves</p><p>the autumn calls my name</p></div></div>
++    <div class="player"><img src="{covers[1]}"><div><div class="t">Days that Passed</div><div class="s">Drudkh</div></div>
++      <div class="ctrl"><div class="btns"><span class="on">⤮</span><span>⏮</span><span class="pp">▶</span><span>⏭</span><span class="on">↻</span></div>
++      <div class="prog"><span>2:21</span><div class="track-bar"><i></i></div><span>6:12</span></div></div>
++      <div class="s">☰ ▭ 🔈 ━━━━</div></div>
++    <div class="connect">⏵ Playing on Tak_0</div>
++  </div>
++</div>
++<div class="sheet">
++  <section><h2>1 · {len(scene['shades'])} sampled shades (by family, then lightness; bar = share of the screen)</h2>{shades_html}<div class="bar">{share_bar}</div></section>
++  <section><h2>2 · Colour families as tonal ramps</h2>{fam_html}</section>
++  <section><h2>3 · Relations — {d['kind']}</h2>{pairs_html}</section>
++  <section><h2>3b · Completed palette (picture colours H, generated G)</h2>{pal_html}</section>
++  {f'<section style="background:#{to_hex(btop["main_bg"])};color:#{to_hex(btop["main_fg"])}"><h2>btop (wallust.theme)</h2>{btop_html}</section>' if btop else ''}
++  <section><h2>4 · Surface ramp</h2><div class="row">{surf_html}</div><h2 style="margin-top:12px">Text roles</h2><div class="row">{text_html}</div></section>
++  <section><h2>4 · Accent ramps (balanced chroma)</h2>{ramp_html}</section>
++  <section><h2>Checks</h2><table><tr><td>pair</td><td>contrast</td><td>needed</td><td></td></tr>{check_html}</table><h2 style="margin-top:12px">Decisions</h2><ul>{log_html}</ul></section>
++</div></body></html>"""
++    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
++    tmp = path + ".tmp"
++    with open(tmp, "w") as f:
++        f.write(page)
++    os.replace(tmp, path)
+diff --git a/dots/.config/matugen/templates/wallpaper-theme/source.json b/dots/.config/matugen/templates/wallpaper-theme/source.json
+new file mode 100644
+index 00000000..60408b01
+--- /dev/null
++++ b/dots/.config/matugen/templates/wallpaper-theme/source.json
+@@ -0,0 +1,5 @@
++{
++  "image": "{{image}}",
++  "source_color": "{{colors.source_color.default.hex}}",
++  "primary": "{{colors.primary.default.hex}}"
++}
+diff --git a/dots/.config/matugen/templates/wallpaper-theme/spicetify/theme.js b/dots/.config/matugen/templates/wallpaper-theme/spicetify/theme.js
+new file mode 100644
+index 00000000..97507139
+--- /dev/null
++++ b/dots/.config/matugen/templates/wallpaper-theme/spicetify/theme.js
+@@ -0,0 +1,49 @@
++// Wallpaper theme, runtime part.
++(function wallpaperTheme() {
++  // 1. Pick up new colours and styles without restarting Spotify:
++  //    `spicetify refresh -n` rewrites colors.css and user.css after a
++  //    wallpaper change; reload each stylesheet when its contents change.
++  const last = {};
++  async function check(name) {
++    const link = document.querySelector(`link[href*="${name}"]`);
++    if (!link) return;
++    try {
++      const url = link.href.split("?")[0];
++      const css = await (await fetch(`${url}?t=${Date.now()}`, { cache: "no-store" })).text();
++      if (last[name] !== undefined && css !== last[name]) link.href = `${url}?t=${Date.now()}`;
++      last[name] = css;
++    } catch (e) { /* file mid-write; try again next round */ }
++  }
++  setInterval(() => { check("colors.css"); check("user.css"); }, 2000);
++
++  // 2. Headers tinted from album art (home, album, playlist, artist pages) get
++  //    an inline background colour no stylesheet variable reaches, under a
++  //    60% black overlay. Give them the wallpaper's header gradient instead:
++  //    its most expressive colour fading into the page. Images and the right
++  //    panel (cover, Canvas) are left alone.
++  function neutralise() {
++    const view = document.querySelector(".Root__main-view");
++    if (!view) return;
++    const min = view.clientWidth * 0.4;
++    for (const el of view.querySelectorAll('[style*="background-color"], [style*="background:"]')) {
++      if (el.tagName === "IMG" || el.tagName === "VIDEO" || el.querySelector("img, video")) continue;
++      const st = el.style;
++      if (/url\(/.test(st.backgroundImage || st.background || "")) continue;
++      if (!/rgb|#/.test(st.backgroundColor || st.background || "")) continue;
++      const r = el.getBoundingClientRect();
++      if (r.width < min || r.height < 120) continue;
++      st.setProperty("background-color", "var(--spice-gradient-top)", "important");
++      st.setProperty("background-image", "linear-gradient(var(--spice-gradient-top), var(--spice-main))", "important");
++    }
++  }
++  let queued = false;
++  const schedule = () => {
++    if (queued) return;
++    queued = true;
++    requestAnimationFrame(() => { queued = false; neutralise(); });
++  };
++  new MutationObserver(schedule).observe(document.documentElement, {
++    subtree: true, childList: true, attributes: true, attributeFilter: ["style"],
++  });
++  schedule();
++})();
+diff --git a/dots/.config/matugen/templates/wallpaper-theme/spicetify/user.css b/dots/.config/matugen/templates/wallpaper-theme/spicetify/user.css
+new file mode 100644
+index 00000000..f263159b
+--- /dev/null
++++ b/dots/.config/matugen/templates/wallpaper-theme/spicetify/user.css
+@@ -0,0 +1,95 @@
++/* Wallpaper theme: colours come from color.ini, generated by
++   ~/.config/matugen/templates/wallpaper-theme/wallpaper-theme.py.
++   Map Spotify's own design tokens onto them so every surface follows. */
++:root,
++.encore-dark-theme,
++.encore-dark-theme .encore-base-set,
++.encore-light-theme,
++.encore-light-theme .encore-base-set,
++.encore-layout-themes {
++  --background-base: var(--spice-main) !important;
++  --background-highlight: var(--spice-highlight) !important;
++  --background-press: var(--spice-highlight-elevated) !important;
++  --background-elevated-base: var(--spice-main-elevated) !important;
++  --background-elevated-highlight: var(--spice-highlight-elevated) !important;
++  --background-elevated-press: var(--spice-highlight-elevated) !important;
++  /* chips and tinted buttons: the secondary accent, lightly */
++  --background-tinted-base: rgba(var(--spice-rgb-secondary), 0.16) !important;
++  --background-tinted-highlight: rgba(var(--spice-rgb-secondary), 0.24) !important;
++  --background-tinted-press: rgba(var(--spice-rgb-secondary), 0.32) !important;
++  --text-base: var(--spice-text) !important;
++  --text-subdued: var(--spice-subtext) !important;
++  --essential-base: var(--spice-text) !important;
++  --essential-subdued: var(--spice-button-disabled) !important;
++  --decorative-base: var(--spice-text) !important;
++  --decorative-subdued: rgba(var(--spice-rgb-text), 0.12) !important;     /* dividers */
++}
++
++/* Spotify's green, wherever it is a token (including the per-album
++   "extracted" variants) */
++:root, .encore-dark-theme, .encore-light-theme,
++.encore-dark-theme .encore-base-set, .encore-light-theme .encore-base-set,
++.encore-dark-theme .encore-bright-accent-set, .encore-light-theme .encore-bright-accent-set,
++[class*="encore-"] {
++  --text-bright-accent: var(--spice-button) !important;
++  --essential-bright-accent: var(--spice-button) !important;
++  /* liked / added / downloaded: the secondary accent, so the palette's
++     second colour shows up beside the primary */
++  --text-positive: var(--spice-secondary) !important;
++  --essential-positive: var(--spice-secondary) !important;
++  --extracted-text-bright-accent: var(--spice-button) !important;
++  --text-negative: var(--spice-notification-error) !important;
++  --essential-negative: var(--spice-notification-error) !important;
++  --text-announcement: var(--spice-tertiary) !important;
++  --essential-announcement: var(--spice-tertiary) !important;
++  --text-warning: var(--spice-tertiary) !important;
++  --essential-warning: var(--spice-tertiary) !important;
++}
++
++/* Accent-filled buttons (play, follow, ...): the label uses the page colour,
++   which the generator keeps at 3:1 or more against the accent. */
++.encore-dark-theme .encore-bright-accent-set,
++.encore-light-theme .encore-bright-accent-set,
++.encore-bright-accent-set {
++  --background-base: var(--spice-button) !important;
++  --background-highlight: var(--spice-button-active) !important;
++  --background-press: var(--spice-button-active) !important;
++  --text-base: var(--spice-main) !important;
++  --essential-base: var(--spice-main) !important;
++}
++
++/* Places where the green is a literal colour, not a token */
++[role="menuitemradio"][aria-checked="true"],
++[role="menuitemcheckbox"][aria-checked="true"] { color: var(--spice-button) !important; }
++input:checked ~ .x-toggle-indicatorWrapper,
++input:checked:hover:not([disabled], :active) ~ .x-toggle-indicatorWrapper {
++  background-color: var(--spice-button) !important;
++}
++/* What is playing right now: the tertiary accent, like the "now playing" bars */
++.main-trackList-playingIcon, .main-trackList-rowTitle[data-is-playing="true"],
++[aria-current="true"] .encore-text-body-medium { color: var(--spice-tertiary) !important; }
++
++/* Frame around the panels and the player bar: one step below the panels.
++   Only on body: a background on .Root__top-container or #main would paint
++   over the Canvas video, which sits behind the right panel at z-index -1. */
++body { background-color: var(--spice-player) !important; }
++.Root__now-playing-bar, footer[data-testid="now-playing-bar"] {
++  background-color: var(--spice-player) !important;
++}
++/* Panels take --background-base from the tokens above. No forced background
++   here: the right-hand panel plays a track's Canvas video behind its content,
++   and an opaque panel would hide it. */
++
++/* Album-art tints: Spotify sets these inline per element from the cover.
++   A stylesheet !important beats a normal inline value, so the wallpaper
++   palette wins. Large inline colour blocks (home and album headers) get the
++   wallpaper header gradient from theme.js. The lyrics card keeps the cover's
++   colours. */
++* {
++  --extracted-background-color: var(--spice-main-elevated) !important;
++  --extracted-background-tinted: rgba(var(--spice-rgb-text), 0.1) !important;
++  --extracted-entity-color: var(--spice-main-elevated) !important;
++  --extracted-text-base: var(--spice-text) !important;
++  --extracted-text-subdued: var(--spice-subtext) !important;
++  --extracted-text-bright-accent: var(--spice-button) !important;
++}
+diff --git a/dots/.config/matugen/templates/wallpaper-theme/wallpaper-theme.py b/dots/.config/matugen/templates/wallpaper-theme/wallpaper-theme.py
+new file mode 100755
+index 00000000..99c13fd7
+--- /dev/null
++++ b/dots/.config/matugen/templates/wallpaper-theme/wallpaper-theme.py
+@@ -0,0 +1,551 @@
++#!/usr/bin/env python3
++"""Wallpaper-driven themes: a spicetify colour scheme, a btop theme and a recoloured icon theme.
++
++matugen runs this after every wallpaper change ([templates.wallpaper_theme] in
++~/.config/matugen/config.toml), with source.json holding the image path.
++
++The colours come from design.py, a fixed procedure: sample up to 100 shades
++of what is on screen, organise them into hue families (real tonal ramps),
++relate the families (complementary, analogous, ...), then fill fixed design
++system slots (surface ramp, text roles at fixed contrast, three balanced
++accent ramps, error) and run an adjustment pass. Every run also writes an
++inspection sheet with a Spotify preview (preview.html in the state folder).
++
++Usage: wallpaper-theme.py [SOURCE_JSON | IMAGE] [--print] [--no-apply]
++                          [--no-spicetify] [--no-btop] [--no-icons]
++       wallpaper-theme.py --preview OUT.html IMAGE     (writes nothing else)
++"""
++
++import configparser
++import json
++import os
++import re
++import shutil
++import subprocess
++import sys
++
++import numpy as np
++
++HERE = os.path.dirname(os.path.realpath(__file__))
++sys.path.insert(0, HERE)
++from design import (BLACK, MIN_RYB_GAP, WHITE, checks, contrast, design, from_hex,  # noqa: E402
++                    from_lch, hue_gap, hue_name, lch, mix, organise, relate, ryb_gap,
++                    sample, to_hex, tone)
++from wallpaper_view import load_pixels  # noqa: E402
++
++HOME = os.path.expanduser("~")
++STATE = f"{HOME}/.local/state/quickshell/user/generated/wallpaper-theme"
++DEFAULT_SOURCE = f"{STATE}/source.json"
++SPICETIFY_THEME = f"{HOME}/.config/spicetify/Themes/Wallpaper"
++ICON_DIR = f"{HOME}/.local/share/icons"
++# Generated icon theme -> theme it recolours (and falls back to)
++ICON_VARIANTS = {"Wallpaper-dark": "breeze-plus-dark", "Wallpaper-light": "breeze-plus"}
++SYSTEM_ICONS = "/usr/share/icons"
++
++
++# ---------- what is on screen ----------
++
++def run_design(image=None, seed=None, primary=None):
++    """image (path) or seed (hex colour) -> (scene, relations, design)."""
++    if image:
++        px, rows = load_pixels(image)
++    else:
++        rgb = np.array([int(seed.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4)]) / 255
++        px, rows = np.tile(rgb, (64, 1)), np.linspace(0, 1, 64)
++    scene = organise(sample(px, rows))
++    rel = relate(scene)
++    return scene, rel, design(scene, rel, from_hex(primary) if primary else None)
++
++
++# ---------- btop ----------
++
++BTOP_THEME = f"{HOME}/.config/btop/themes/wallust.theme"
++
++# Colour theory for a monitoring UI, calibrated on matugen's (Material) btop
++# theme, whose restraint is what makes it readable:
++#  - hierarchy 60-30-10: neutral surfaces, the picture's own hue as the base,
++#    one opposite hue as the accent; one muted support hue, red only for
++#    hot / full states. Four hues, never the whole palette.
++#  - fixed tone ladder (OKLab L): container 0.41 -> main 0.82 -> light 0.91
++#  - chroma budget per role; the light end of a gradient at half chroma
++#  - the support hue is harmonised: turned up to 15 degrees toward the base,
++#    but never so far that the two read as one colour; red is left red
++#  - neutrals carry a trace of the base hue (Material's neutral-variant)
++BTOP_TONES = {"container": 0.41, "main": 0.82, "light": 0.91}
++BTOP_CHROMA = {"accent": 0.10, "base": 0.085, "support": 0.055, "error": 0.09}
++BTOP_NEUTRALS = {      # role: (L, C), measured from matugen's btop theme
++    "main_fg": (0.91, 0.020), "graph_text": (0.83, 0.031), "inactive_fg": (0.65, 0.030),
++    "div_line": (0.39, 0.029), "meter_bg": (0.33, 0.018)}
++HARMONISE = 15
++
++
++def harmonise(h, toward):
++    d = ((toward - h + 180) % 360) - 180
++    for step in range(HARMONISE, -1, -1):
++        out = (h + max(-step, min(step, d))) % 360
++        if ryb_gap(out, toward) >= MIN_RYB_GAP or step == 0:
++            return out
++    return h
++
++
++def btop_hues(d):
++    """Base, accent, support, error hues (OKLCH degrees) and whether the
++    picture has any colour at all."""
++    pal = d["palette"]["colours"]
++    base_src = next((c for c in pal if c["origin"] == "picture"), None)
++    if base_src is None:                       # grey picture: monochrome by design
++        h = lch(d["surfaces"]["page"])[2]
++        return {"base": h, "accent": h, "support": h, "error": 27.0}, False
++    base = base_src["hue"]
++    # accent: the design's opposite colour (desktop accent or painter's complement)
++    accent = lch(d["ramps"]["secondary"]["main"])[2]
++    if ryb_gap(accent, base) < 90:
++        accent = lch(d["ramps"]["tertiary"]["main"])[2]
++    # support: a second real picture colour, else the strongest analogous hue
++    others = [c for c in pal if c is not base_src and ryb_gap(c["hue"], base) >= MIN_RYB_GAP
++              and ryb_gap(c["hue"], accent) >= MIN_RYB_GAP]
++    sup = next((c for c in others if c["origin"] == "picture"), None) or \
++        next((c for c in others if c["relation"] == "analogous"), None)
++    support = harmonise(sup["hue"], base) if sup else (base + 30) % 360
++    # error: the palette's red if it has one, else red itself
++    red = min(pal, key=lambda c: hue_gap(c["hue"], 27))
++    error = red["hue"] if hue_gap(red["hue"], 27) <= 15 else 27.0
++    return {"base": base, "accent": accent, "support": support, "error": error}, True
++
++
++def btop_roles(d):
++    hues, coloured = btop_hues(d)
++    k = 1.0 if coloured else 0.0
++
++    def c(role, tone, half=False):
++        C = BTOP_CHROMA[role] * k * (0.5 if half else 1.0)
++        if role == "error":
++            C = BTOP_CHROMA[role] * (0.5 if half else 1.0)
++        return from_lch(BTOP_TONES[tone], C, hues[role])
++
++    def ramp(role):
++        return c(role, "container"), c(role, "main"), c(role, "light", half=True)
++
++    roles = {"main_bg": d["surfaces"]["page"]}
++    for name, (L, C) in BTOP_NEUTRALS.items():
++        roles[name] = from_lch(L, C * k, hues["base"])
++    roles["title"] = roles["main_fg"]
++    roles.update({
++        "hi_fg": c("accent", "main"), "selected_bg": c("accent", "container"),
++        "selected_fg": c("accent", "light", half=True), "proc_misc": c("base", "main"),
++        "cpu_box": c("accent", "main"), "mem_box": c("support", "main"),
++        "net_box": c("base", "main"), "proc_box": c("accent", "main"),
++        "temp_start": c("support", "main"), "temp_mid": c("base", "main"), "temp_end": c("error", "main"),
++    })
++    for name, role in (("cpu", "accent"), ("free", "base"), ("cached", "support"),
++                       ("available", "accent"), ("used", "support"), ("download", "accent"),
++                       ("upload", "support")):
++        roles[f"{name}_start"], roles[f"{name}_mid"], roles[f"{name}_end"] = ramp(role)
++    roles["used_end"] = c("error", "main")                  # a full disk is a warning
++    roles["process_start"], roles["process_mid"], roles["process_end"] = \
++        c("base", "main"), c("accent", "main"), c("error", "main")
++    return roles, hues
++
++
++def write_btop(d, source):
++    roles, hues = btop_roles(d)
++    lines = ["# btop theme generated from the wallpaper by",
++             "# ~/.config/matugen/templates/wallpaper-theme/wallpaper-theme.py",
++             f"# source: {source}",
++             "# hues: " + ", ".join(f"{k} {hue_name(h)} {h:.0f}" for k, h in hues.items()), ""]
++    lines += [f'theme[{k}]="#{to_hex(v)}"' for k, v in roles.items()]
++    os.makedirs(os.path.dirname(BTOP_THEME), exist_ok=True)
++    tmp = BTOP_THEME + ".tmp"
++    with open(tmp, "w") as f:
++        f.write("\n".join(lines) + "\n")
++    os.replace(tmp, BTOP_THEME)
++    return lines
++
++
++# ---------- spicetify ----------
++
++def spicetify_roles(d):
++    """The design system's slots -> spicetify's colour keys (fixed table)."""
++    s, r = d["surfaces"], d["ramps"]
++    return {
++        "text": d["text"],
++        "subtext": d["subtext"],
++        "main": s["page"],
++        "main-elevated": s["elevated"],
++        "card": s["card"],
++        "highlight": s["highlight"],
++        "highlight-elevated": s["pressed"],
++        "sidebar": s["sidebar"],
++        "player": s["player"],
++        "tab-active": s["card"],
++        "misc": s["misc"],
++        "shadow": mix(s["player"], BLACK, 0.7),
++        "selected-row": d["text"],
++        "button": r["primary"]["main"],
++        "button-active": r["primary"]["soft"],
++        "button-disabled": d["disabled"],
++        "notification": r["secondary"]["main"],
++        "notification-error": r["error"]["main"],
++        # extra keys, exposed by spicetify as --spice-<name> / --spice-rgb-<name>
++        "secondary": r["secondary"]["main"],
++        "tertiary": r["tertiary"]["main"],
++        "primary-container": r["primary"]["container"],
++        "secondary-container": r["secondary"]["container"],
++        "tertiary-container": r["tertiary"]["container"],
++        "gradient-top": d["gradient_top"],
++    }
++
++
++def write_spicetify_assets(accent):
++    """Spotify draws its "now playing" bars from green image files that no
++    colour variable reaches; ship copies in the accent colour (spicetify
++    copies a theme's assets/ over the app's files, overwrite_assets = 1)."""
++    from PIL import Image, ImageSequence
++
++    src = "/opt/spotify/Apps/xpui/images"
++    out = f"{SPICETIFY_THEME}/assets/images"
++    os.makedirs(out, exist_ok=True)
++    hx = to_hex(accent)
++    rgb = [int(hx[i:i + 2], 16) for i in (0, 2, 4)]
++    backup = f"{STATE}/spotify-assets"     # pristine copies; the app's get replaced
++    os.makedirs(backup, exist_ok=True)
++    for name in ("equaliser-green.svg", "equaliser-animated-green.gif"):
++        orig = f"{backup}/{name}"
++        if not os.path.exists(orig):
++            if not os.path.exists(f"{src}/{name}"):
++                continue
++            shutil.copyfile(f"{src}/{name}", orig)
++        if name.endswith(".svg"):
++            with open(orig) as f:
++                svg = re.sub(r"#1DB954|#1ed760", f"#{hx}", f.read(), flags=re.I)
++            with open(f"{out}/{name}", "w") as f:
++                f.write(svg)
++            continue
++        im = Image.open(orig)
++        frames = []
++        for frame in ImageSequence.Iterator(im):
++            # Pillow hands later frames over as RGB(A); recolour the green pixels
++            px = np.array(frame.convert("RGBA"))
++            green = (np.abs(px[..., :3].astype(int) - [29, 185, 84]).sum(-1) < 60) & (px[..., 3] > 0)
++            px[green, :3] = rgb
++            frames.append(Image.fromarray(px, "RGBA"))
++        frames[0].save(f"{out}/{name}", save_all=True, append_images=frames[1:], loop=0,
++                       duration=im.info.get("duration", 30), disposal=2, optimize=False)
++
++
++def write_spicetify(d, source):
++    roles = spicetify_roles(d)
++    os.makedirs(SPICETIFY_THEME, exist_ok=True)
++    for name in ("user.css", "theme.js"):
++        shutil.copyfile(f"{HERE}/spicetify/{name}", f"{SPICETIFY_THEME}/{name}")
++    write_spicetify_assets(roles["tertiary"])     # "now playing" marks
++    lines = [f"; Generated by {os.path.basename(__file__)} from {source}",
++             f"; {d['kind']} scheme"] + [f"; {line}" for line in d["log"]] + ["[Wallpaper]"]
++    lines += [f"{k:<19} = {to_hex(v)}" for k, v in roles.items()]
++    tmp = f"{SPICETIFY_THEME}/color.ini.tmp"
++    with open(tmp, "w") as f:
++        f.write("\n".join(lines) + "\n")
++    os.replace(tmp, f"{SPICETIFY_THEME}/color.ini")
++    return lines
++
++
++# ---------- icon theme ----------
++#
++# Only the UI accent is recoloured, the way a designer would re-skin Breeze:
++#  - everywhere: the colour Breeze assigns to .ColorScheme-Accent and
++#    .ColorScheme-Highlight (selection marks, active states, ...)
++#  - in places/: every Breeze blue, i.e. the folders with all their shades
++# Literal blues elsewhere are app logos or carry meaning (info, links) and stay.
++
++BREEZE_BLUE = lch(from_hex("3daee9"))
++HEX_RE = re.compile(r"#([0-9a-fA-F]{6})\b")
++ROLE_RE = re.compile(r"(\.ColorScheme-(?:Accent|Highlight)\s*\{\s*color\s*:\s*)#([0-9a-fA-F]{6})")
++
++
++def icon_accent(d, dark):
++    """Folder colour: the primary accent's own shade at a lightness that sits
++    well on Breeze's surfaces (lighter on dark, deeper on light), at the
++    design's balanced accent chroma."""
++    C = lch(d["ramps"]["primary"]["main"])[1]
++    return tone(d["accent_src"][0], 0.72 if dark else 0.56, chroma=C if C > 0.02 else 0.0)
++
++
++def is_breeze_blue(hx):
++    L, C, h = lch(from_hex(hx))
++    return C >= 0.05 and hue_gap(h, BREEZE_BLUE[2]) <= 30
++
++
++def blue_mapper(target):
++    """Map Breeze blues to the target, keeping each shade's lightness and
++    saturation relative to Breeze's base blue, so the light and dark parts of
++    a folder keep their relationship."""
++    tL, tC, th = lch(target)
++    bL, bC, bh = BREEZE_BLUE
++    cache = {}
++
++    def mapped(hx):
++        hx = hx.lower()
++        if hx not in cache:
++            if is_breeze_blue(hx):
++                L, C, h = lch(from_hex(hx))
++                dh = ((h - bh + 180) % 360) - 180
++                cache[hx] = "#" + to_hex(from_lch(tL + (L - bL), C * tC / bC, th + dh))
++            else:
++                cache[hx] = "#" + to_hex(target)
++        return cache[hx]
++
++    def recolour(svg, in_places):
++        # One pass per file: a mapped colour can itself look like a Breeze
++        # blue, so running both substitutions would shift it twice.
++        if in_places:
++            return HEX_RE.sub(lambda m: mapped(m.group(1)) if is_breeze_blue(m.group(1).lower())
++                              else m.group(0), svg)
++        return ROLE_RE.sub(lambda m: m.group(1) + mapped(m.group(2)), svg)
++    return recolour
++
++
++def read_index(theme):
++    cp = configparser.ConfigParser(interpolation=None, strict=False)
++    cp.optionxform = str
++    cp.read(f"{SYSTEM_ICONS}/{theme}/index.theme")
++    return cp
++
++
++def theme_chain(name, seen=None):
++    seen = seen if seen is not None else []
++    if name in seen or name == "hicolor" or not os.path.isdir(f"{SYSTEM_ICONS}/{name}"):
++        return seen
++    seen.append(name)
++    for parent in read_index(name).get("Icon Theme", "Inherits", fallback="").split(","):
++        if parent.strip():
++            theme_chain(parent.strip(), seen)
++    return seen
++
++
++def affected_icons(chain):
++    """[(relative path, real file)] of icons the recolouring touches, in
++    lookup order. Scanning ~40k files is slow, so the list is cached until an
++    icon package changes."""
++    stamp = [[t, os.path.getmtime(f"{SYSTEM_ICONS}/{t}/index.theme")] for t in chain]
++    cache_file = f"{STATE}/icons-{chain[0]}.json"
++    try:
++        with open(cache_file) as f:
++            cached = json.load(f)
++        if cached["stamp"] == stamp:
++            return cached["icons"]
++    except (OSError, ValueError, KeyError):
++        pass
++
++    touched = {}    # real file -> bool
++    icons, seen = [], set()
++    for theme in chain:
++        root = f"{SYSTEM_ICONS}/{theme}"
++        # followlinks: Breeze's @2x/@3x directories are symlinks
++        for dirpath, _, files in os.walk(root, followlinks=True):
++            for fn in files:
++                if not fn.endswith(".svg"):
++                    continue
++                rel = os.path.relpath(os.path.join(dirpath, fn), root)
++                if rel in seen:     # an earlier theme in the chain wins
++                    continue
++                seen.add(rel)
++                real = os.path.realpath(os.path.join(dirpath, fn))
++                key = (real, rel.startswith("places/"))
++                if key not in touched:
++                    try:
++                        with open(real, encoding="utf-8") as f:
++                            svg = f.read()
++                    except (OSError, UnicodeDecodeError):
++                        touched[key] = False
++                        continue
++                    touched[key] = bool(ROLE_RE.search(svg)) or (
++                        key[1] and any(is_breeze_blue(h.lower()) for h in set(HEX_RE.findall(svg))))
++                if touched[key]:
++                    icons.append([rel, real])
++    os.makedirs(STATE, exist_ok=True)
++    with open(cache_file, "w") as f:
++        json.dump({"stamp": stamp, "icons": icons}, f)
++    return icons
++
++
++def write_icon_theme(name, base, target):
++    chain = theme_chain(base)
++    recolour = blue_mapper(target)
++    out = f"{ICON_DIR}/{name}"
++    tmp = f"{out}.new"
++    shutil.rmtree(tmp, ignore_errors=True)
++
++    written = {}    # (real file, in places) -> first path we wrote it to
++    used_dirs = set()
++    for rel, real in affected_icons(chain):
++        key = (real, rel.startswith("places/"))
++        dst = os.path.join(tmp, rel)
++        os.makedirs(os.path.dirname(dst), exist_ok=True)
++        if key in written:
++            os.symlink(os.path.relpath(written[key], os.path.dirname(dst)), dst)
++        else:
++            with open(real, encoding="utf-8") as f:
++                svg = recolour(f.read(), key[1])
++            with open(dst, "w", encoding="utf-8") as f:
++                f.write(svg)
++            written[key] = dst
++        used_dirs.add(os.path.dirname(rel))
++
++    # index.theme: only the directories we filled, sections copied from the chain
++    sections = {}
++    for theme in reversed(chain):
++        cp = read_index(theme)
++        for s in cp.sections():
++            if s != "Icon Theme":
++                sections[s] = dict(cp[s])
++    dirs = sorted(d for d in used_dirs if d in sections)
++    lines = ["[Icon Theme]",
++             f"Name={name.replace('-', ' ').title()}",
++             f"Comment={base} recoloured to the wallpaper accent #{to_hex(target)}",
++             f"Inherits={base},hicolor",
++             # Colours are baked in; KDE must not repaint them with its own accent,
++             # or Dolphin and GTK apps would disagree.
++             "FollowsColorScheme=false",
++             "Example=folder",
++             "Directories=" + ",".join(d for d in dirs if "@" not in d),
++             "ScaledDirectories=" + ",".join(d for d in dirs if "@" in d), ""]
++    for d in dirs:
++        lines.append(f"[{d}]")
++        lines += [f"{k}={v}" for k, v in sections[d].items()]
++        lines.append("")
++    with open(f"{tmp}/index.theme", "w") as f:
++        f.write("\n".join(lines))
++    subprocess.run(["gtk-update-icon-cache", "-q", "-f", "-t", tmp],
++                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
++
++    old = f"{out}.old"
++    shutil.rmtree(old, ignore_errors=True)
++    if os.path.exists(out):
++        os.rename(out, old)
++    os.rename(tmp, out)
++    shutil.rmtree(old, ignore_errors=True)
++    return len(written)
++
++
++def refresh_icons():
++    """Make running apps reload icons even though the theme name is unchanged."""
++    try:
++        scheme = subprocess.run(["gsettings", "get", "org.gnome.desktop.interface", "color-scheme"],
++                                capture_output=True, text=True).stdout
++    except FileNotFoundError:
++        return
++    name = "Wallpaper-dark" if "dark" in scheme else "Wallpaper-light"
++    base = ICON_VARIANTS[name]
++    # GTK: only reloads on a name change, so flip to the base theme and back
++    subprocess.run(["gsettings", "set", "org.gnome.desktop.interface", "icon-theme", base])
++    subprocess.run(["gsettings", "set", "org.gnome.desktop.interface", "icon-theme", name])
++    for ini in (f"{HOME}/.config/gtk-3.0/settings.ini", f"{HOME}/.config/gtk-4.0/settings.ini"):
++        if os.path.isfile(ini):
++            with open(ini) as f:
++                s = f.read()
++            if "gtk-icon-theme-name=" in s:
++                s = re.sub(r"(?m)^gtk-icon-theme-name=.*$", f"gtk-icon-theme-name={name}", s)
++                with open(ini, "w") as f:
++                    f.write(s)
++    # KDE/Qt: set the theme and tell KIconLoader in every app to reload
++    subprocess.run(["kwriteconfig6", "--file", "kdeglobals", "--group", "Icons", "--key", "Theme", name],
++                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
++    for group in range(6):
++        subprocess.run(["dbus-send", "--session", "--type=signal", "/KIconLoader",
++                        "org.kde.KIconLoader.iconChanged", f"int32:{group}"],
++                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
++    # What Plasma's icon settings send too (KGlobalSettings: 4 = IconChanged),
++    # so apps rebuild views that keep their own icon pictures
++    subprocess.run(["dbus-send", "--session", "--type=signal", "/KGlobalSettings",
++                    "org.kde.KGlobalSettings.notifyChange", "int32:4", "int32:0"],
++                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
++
++
++
++def main():
++    flags = {a for a in sys.argv[1:] if a.startswith("--")}
++    args = [a for a in sys.argv[1:] if not a.startswith("--")]
++
++    if "--preview" in flags:
++        out, image = args[0], args[1]
++        import preview
++        primary = None
++        try:    # the current wallpaper: use the desktop's primary, as the live run does
++            with open(DEFAULT_SOURCE) as f:
++                data = json.load(f)
++            if os.path.realpath(data.get("image", "")) == os.path.realpath(image):
++                primary = data.get("primary")
++        except (OSError, ValueError):
++            pass
++        scene, rel, d = run_design(image=image, primary=primary)
++        preview.write(out, image, scene, rel, d, spicetify_roles(d), checks(d), btop_roles(d)[0])
++        return
++
++    src = args[0] if args else DEFAULT_SOURCE
++    image, seed, primary = src, None, None
++    if src.endswith(".json"):
++        with open(src) as f:
++            data = json.load(f)
++        image, seed, primary = data.get("image", ""), data.get("source_color"), data.get("primary")
++    if not primary:
++        try:    # older source.json, or an image given directly: matugen's last palette
++            with open(f"{HOME}/.local/state/quickshell/user/generated/colors.json") as f:
++                primary = json.load(f).get("primary")
++        except (OSError, ValueError):
++            pass
++
++    if image and os.path.isfile(image):
++        scene, rel, d = run_design(image=image, primary=primary)
++        source = image
++    elif seed:
++        # Colour-only mode in quickshell: one colour, no image
++        scene, rel, d = run_design(seed=seed)
++        source = seed
++    else:
++        sys.exit(f"no usable image or colour in {src}")
++
++    os.makedirs(STATE, exist_ok=True)
++    roles = spicetify_roles(d)
++    with open(f"{STATE}/palette.json", "w") as f:
++        json.dump({"source": source, "scheme": d["kind"], "log": d["log"],
++                   **{k: "#" + to_hex(v) for k, v in roles.items()}}, f, indent=2)
++    try:
++        import preview
++        preview.write(f"{STATE}/preview.html", image if image and os.path.isfile(image) else None,
++                      scene, rel, d, roles, checks(d), btop_roles(d)[0])
++    except Exception as e:      # the sheet is for inspection; never block theming
++        print(f"preview failed: {e}", file=sys.stderr)
++
++    if "--no-btop" not in flags:
++        # first: quick, and the one people look at right after a change
++        lines = write_btop(d, source)
++        if "--print" in flags:
++            print("\n".join(lines))
++        if "--no-apply" not in flags:
++            # SIGUSR2 makes btop reload its config and theme
++            subprocess.run(["pkill", "-USR2", "-x", "btop"],
++                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
++
++    if "--no-spicetify" not in flags:
++        lines = write_spicetify(d, source)
++        if "--print" in flags:
++            print("\n".join(lines))
++        if "--no-apply" not in flags:
++            # Copies the colours into Spotify without restarting it; theme.js
++            # picks them up live. Does nothing if spicetify is not set up.
++            subprocess.run(["spicetify", "refresh", "-n", "-q"],
++                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
++
++    if "--no-icons" not in flags:
++        for name, base in ICON_VARIANTS.items():
++            if os.path.isdir(f"{SYSTEM_ICONS}/{base}"):
++                target = icon_accent(d, dark=name.endswith("dark"))
++                n = write_icon_theme(name, base, target)
++                if "--print" in flags:
++                    print(f"{name}: {n} icons recoloured to #{to_hex(target)}")
++        if "--no-apply" not in flags:
++            refresh_icons()
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/dots/.config/matugen/templates/wallpaper-theme/wallpaper_view.py b/dots/.config/matugen/templates/wallpaper-theme/wallpaper_view.py
+new file mode 100644
+index 00000000..2fb65d43
+--- /dev/null
++++ b/dots/.config/matugen/templates/wallpaper-theme/wallpaper_view.py
+@@ -0,0 +1,62 @@
++"""What quickshell actually shows of the wallpaper, as pixels."""
++
++import json
++import os
++import subprocess
++
++import numpy as np
++
++HOME = os.path.expanduser("~")
++
++
++def screen_size():
++    """Focused monitor in logical pixels; 1920x1080 if Hyprland can't say."""
++    try:
++        out = subprocess.run(["hyprctl", "monitors", "-j"], capture_output=True, text=True,
++                             timeout=2).stdout
++        mon = next((m for m in json.loads(out) if m.get("focused")), None)
++        if mon:
++            return mon["width"] / mon["scale"], mon["height"] / mon["scale"]
++    except (OSError, ValueError, subprocess.SubprocessError):
++        pass
++    return 1920, 1080
++
++
++def visible(img):
++    """The part of the wallpaper quickshell actually shows: it scales the image
++    to cover the screen, zooms in a little more for parallax, and centres it."""
++    sw, sh = screen_size()
++    zoom = 1.07
++    try:
++        with open(f"{HOME}/.config/illogical-impulse/config.json") as f:
++            zoom = json.load(f)["background"]["parallax"]["workspaceZoom"]
++    except (OSError, ValueError, KeyError):
++        pass
++    w, h = img.size
++    scale = max(sw / w, sh / h) * zoom
++    vw, vh = min(w, sw / scale), min(h, sh / scale)
++    # Horizontally the view pans across workspaces, so keep its full range
++    vw = min(w, vw * zoom)
++    left, top = (w - vw) / 2, (h - vh) / 2
++    return img.crop((round(left), round(top), round(left + vw), round(top + vh)))
++
++
++def load_pixels(path):
++    from PIL import Image
++
++    img = visible(Image.open(path))
++    img.thumbnail((256, 256))
++    if img.mode in ("I", "I;16", "I;16B", "I;16L", "F"):
++        # 16-bit/float greyscale: Pillow's RGB conversion would clip it
++        grey = np.asarray(img, dtype=float)
++        grey /= 65535 if grey.max() > 255 else 255
++        rows = np.repeat(np.linspace(0, 1, img.height), img.width)
++        return np.repeat(grey.reshape(-1, 1), 3, axis=1), rows
++    if img.mode in ("RGBA", "LA", "P"):
++        img = img.convert("RGBA")
++        px = np.asarray(img, dtype=float).reshape(-1, 4) / 255
++        rows = np.repeat(np.linspace(0, 1, img.height), img.width)
++        keep = px[:, 3] > 0.5               # ignore transparent areas
++        return px[keep][:, :3], rows[keep]
++    rows = np.repeat(np.linspace(0, 1, img.height), img.width)   # 0 = top of the screen
++    return np.asarray(img.convert("RGB"), dtype=float).reshape(-1, 3) / 255, rows
+diff --git a/dots/.config/quickshell/ii/scripts/colors/terminal/sequences.txt b/dots/.config/quickshell/ii/scripts/colors/terminal/sequences.txt
+index a677181e..9e38d5d1 100644
+--- a/dots/.config/quickshell/ii/scripts/colors/terminal/sequences.txt
++++ b/dots/.config/quickshell/ii/scripts/colors/terminal/sequences.txt
+@@ -1 +1 @@
+-]4;0;#$term0 #\]1;0;#$term0 #\]4;1;#$term1 #\]4;2;#$term2 #\]4;3;#$term3 #\]4;4;#$term4 #\]4;5;#$term5 #\]4;6;#$term6 #\]4;7;#$term7 #\]4;8;#$term8 #\]4;9;#$term9 #\]4;10;#$term10 #\]4;11;#$term11 #\]4;12;#$term12 #\]4;13;#$term13 #\]4;14;#$term14 #\]4;15;#$term15 #\]4;232;#$term7 #\]4;255;#$primary #\]4;254;#$primaryContainer #\]4;253;#$secondary #\]4;252;#$secondaryContainer #\]4;251;#$tertiary #\]4;250;#$tertiaryContainer #\]4;249;#$error #\]4;248;#$errorContainer #\]4;232;#$onPrimary #\]4;233;#$onPrimaryContainer #\]4;234;#$onSecondary #\]4;235;#$onSecondaryContainer #\]4;236;#$onTertiary #\]4;237;#$onTertiaryContainer #\]4;238;#$onError #\]4;239;#$onErrorContainer #\]4;240;#$onPrimary #\]4;243;#$primary #\]4;244;#$error #\]4;245;#$outlineVariant #\]10;#$term7 #\]11;[100]#$term0 #\]12;#$term7 #\]13;#$term7 #\]17;#$term7 #\]19;#$term0 #\]708;[100]#$term0 #
+\ No newline at end of file
++]4;0;#$term0 #\]1;0;#$term0 #\]4;1;#$term1 #\]4;2;#$term2 #\]4;3;#$term3 #\]4;4;#$term4 #\]4;5;#$term5 #\]4;6;#$term6 #\]4;7;#$term7 #\]4;8;#$term8 #\]4;9;#$term9 #\]4;10;#$term10 #\]4;11;#$term11 #\]4;12;#$term12 #\]4;13;#$term13 #\]4;14;#$term14 #\]4;15;#$term15 #\]4;232;#$term7 #\]4;255;#$primary #\]4;254;#$primaryContainer #\]4;253;#$secondary #\]4;252;#$secondaryContainer #\]4;251;#$tertiary #\]4;250;#$tertiaryContainer #\]4;249;#$error #\]4;248;#$errorContainer #\]4;232;#$onPrimary #\]4;233;#$onPrimaryContainer #\]4;234;#$onSecondary #\]4;235;#$onSecondaryContainer #\]4;236;#$onTertiary #\]4;237;#$onTertiaryContainer #\]4;238;#$onError #\]4;239;#$onErrorContainer #\]4;240;#$onPrimary #\]4;243;#$primary #\]4;244;#$error #\]4;245;#$outlineVariant #\]10;#$term7 #\]11;#$term0 #\]12;#$term7 #\]13;#$term7 #\]17;#$term7 #\]19;#$term0 #\]708;#$term0 #
+\ No newline at end of file
+diff --git a/dots/.config/starship.toml b/dots/.config/starship.toml
+old mode 100644
+new mode 100755
+index 71268293..32bdd209
+--- a/dots/.config/starship.toml
++++ b/dots/.config/starship.toml
+@@ -69,7 +69,7 @@ symbol = " "
+ style = "bold dimmed green"
+ 
+ [time]
+-disabled = true
++disabled = false
+ format = '🕙[\[ $time \]]($style) '
+ time_format = "%T"
+ 
+diff --git a/dots/.config/wallust/wallust.toml b/dots/.config/wallust/wallust.toml
+new file mode 100644
+index 00000000..e6451ede
+--- /dev/null
++++ b/dots/.config/wallust/wallust.toml
+@@ -0,0 +1,98 @@
++# wallust v4-alpha sample configuration
++#
++# Copy this file to ~/.config/wallust/wallust.toml to get started.
++# All options are optional - wallust works fine with an empty config file.
++#
++# Documentation: https://explosion-mental.codeberg.page/wallust/
++# Man page:      man wallust.5
++# Migrating from v2/v3? run `wallust migrate`
++
++# ~ Backend ~
++# How the image is read to extract pixels. Faster backends trade some
++# precision for speed. For most images the difference is invisible.
++#   fastresize  SIMD-accelerated resize (default, recommended)
++#   resized     standard resize, aspect ratio preserved
++#   full        read every pixel - most precise, slowest
++#   thumb       fixed 512×512 crop, fastest
++#   wal         uses ImageMagick `convert`, like pywal
++backend = "fastresize"
++
++# ~ Palette ~
++# How extracted pixels are turned into a 16-color terminal scheme.
++#   salience  perceptually prominent colors (default)
++#   ansi      classic TTY layout: color1=red, color2=green, and so on
++#   kmeans    k-means clustering in Lab color space
++palette = "salience"
++
++# ~ Style ~
++# dark (default) - dark background, light foreground
++# light          - light background, dark foreground
++#style = "dark"
++
++# ~ Salience options ~
++# Only applies when palette = "salience".
++#   sampling:  How colors are picked from the histogram
++#              balanced(default), distributed, high, low
++#   intensity: Shifts the palette toward softer or punchier colors
++#              normal(default), pastel, vibrant
++#salience = { sampling = "balanced", intensity = "normal" }
++
++# ~ Kmeans options ~
++# Only applies when palette = "kmeans".
++#   k:         Number of color clusters (default: 16)
++#   min_dist:  Minimum perceptual distance (delta E) between kept colors (default: 10.0)
++#              raise to get more distinct colors, lower to keep more similar ones
++#kmeans = { k = 16, min_dist = 10.0 }
++
++# ~ 16-color mode ~
++# Dims color8–color14 (the bold/bright row) to give the illusion of a fuller
++# palette, usually terminals use those slots for bold text.
++#use16cols = true
++
++# ~ Contrast check ~
++# Ensures a readable contrast between foreground and background.
++# Leave disabled unless you frequently get unreadable output.
++#check_contrast = true
++
++# ~ Saturation ~
++# Nudge color saturation after palette generation. 1–100.
++# Values above ~60 intensify colors; below ~40 mute them.
++#saturation = 50
++
++# ~ Alpha ~
++# Exposes an `alpha` variable inside templates (e.g. for compositor opacity).
++# Has no effect outside of templating. Default: 100 (fully opaque).
++#alpha = 100
++
++[templates]
++# Render color variables into any config file. Use single quotes for paths
++# to avoid backslash escaping (matters on Windows).
++# Keys:
++#   template  relative path inside ~/.config/wallust/  (the source)
++#   target    absolute path where the result is written (the destination)
++#   pywal     set to true to use {color0} pywal-style syntax instead of {{color0}}
++#   max_depth only when template/target are directories - limits recursion depth
++# Examples:
++#   zathura  = { template = 'zathura',  target = '~/.config/zathura/zathurarc' }
++#   dunst    = { template = 'dunst',    target = '~/.config/dunst/dunstrc' }
++#   kitty    = { template = 'kitty',    target = '~/.config/kitty/kitty.conf' }
++#   # directory: template every file inside src/ into dst/
++#   glava    = { template = 'glava/',   target = '~/.config/glava/', max_depth = 1 }
++#   # pywal compatibility
++#   wal      = { template = 'wal/',     target = '~/.cache/wal/', pywal = true }
++
++[hooks]
++# Shell commands run after every palette generation, skip all with --no-hooks
++# Examples:
++## reload your compositor
++#picom    = "pkill -USR1 picom"
++## set a random wallpaper with swww
++#wallpaper = """swww img "$(find ~/Pictures/Wallpapers -type f | shuf -n 1)" """
++
++[templated_hooks]
++# Like [hooks] but the command is rendered as a Jinja2 template first, giving
++# access to the same variables as templates: colors, wallpaper, palette, etc.
++# Skip all with --no-templated-hooks.
++# Examples:
++#notify = "notify-send 'wallust' 'Generated from {{wallpaper | basename}} ({{palette}})'"
++#waybar = "echo '#{background}' > /tmp/wallust-bg"

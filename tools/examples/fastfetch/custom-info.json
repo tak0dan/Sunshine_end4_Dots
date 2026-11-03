@@ -1,0 +1,10 @@
+{
+  "entries": [
+    {
+      "title": "Running Linux",
+      "since": "2024-01-01",
+      "units": ["years", "months"],
+      "mode": "combined"
+    }
+  ]
+}
