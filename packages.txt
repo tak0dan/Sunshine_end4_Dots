@@ -1,0 +1,19 @@
+# Packages this setup needs on top of end-4's own dependencies
+# (end-4's installer already installs kitty, fish, starship, matugen, jq,
+#  hypridle, breeze-plus, gnome-keyring, ydotool, ...).
+#
+# Format: <package>  <repo|aur>  <required|optional>  # what uses it
+# install.sh installs "repo" packages with pacman and "aur" packages with
+# paru or yay (whichever is installed). Optional ones are asked about.
+
+foot               repo  required  # terminal: Super+Q, foot.ini
+btop               repo  required  # system monitor themed from the wallpaper (wallust.theme)
+fastfetch          repo  required  # shell greeting (fish/config.fish), logo + date counters
+socat              repo  required  # fast path of the keyboard-layout keybind (control socket)
+libnotify          repo  required  # notify-send in the keyboard-layout scripts
+python-numpy       repo  required  # wallpaper theme generator (btop, Spotify, icons)
+python-pillow      repo  required  # wallpaper theme generator: reads the wallpaper
+lm_sensors         repo  optional  # temperatures in btop
+easyeffects        repo  optional  # end-4's execs.lua starts it but does not install it
+spotify            aur   optional  # music app, themed from the wallpaper with spicetify
+spicetify-cli      aur   optional  # applies the wallpaper theme to Spotify
