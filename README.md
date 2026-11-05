@@ -95,6 +95,8 @@ On such layouts use the numpad, which is still bound.
   keyboard you type on. end-4's version took the last event from any device, virtual ones
   included, looked each name up with a separate process (dropping quick successive switches),
   and animated every change.
+- **Default browser** order: Zen Browser, Firefox, Brave, Chromium, then Google Chrome (end-4 tries
+  Chrome first). Used by the autostart and by `Super+W` / `Super+B`.
 - The active window border is the solid accent colour (end-4: a faint outline).
 
 ### Config files menu
