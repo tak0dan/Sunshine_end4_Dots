@@ -707,9 +707,18 @@ index 23f76682..b91f3922 100644
      hl.exec_cmd("gnome-keyring-daemon --start --components=secrets")
      hl.exec_cmd("hypridle")
 diff --git a/dots/.config/hypr/hyprland/general.lua b/dots/.config/hypr/hyprland/general.lua
-index b6764a8b..01462db1 100644
+index b6764a8b..4342f101 100644
 --- a/dots/.config/hypr/hyprland/general.lua
 +++ b/dots/.config/hypr/hyprland/general.lua
+@@ -95,7 +95,7 @@ hl.config({
+             enabled = true,
+             range = 20,
+             offset = {0, 2},
+-            render_power = 10,
++            render_power = 4,
+             color = "rgba(00000020)"
+ 
+         },
 @@ -254,7 +254,10 @@ hl.animation({
  
  hl.config({
@@ -746,10 +755,47 @@ index b6764a8b..01462db1 100644
  
      cursor = {
 diff --git a/dots/.config/hypr/hyprland/keybinds.lua b/dots/.config/hypr/hyprland/keybinds.lua
-index d54d25bd..857bf589 100644
+index d54d25bd..658c9313 100644
 --- a/dots/.config/hypr/hyprland/keybinds.lua
 +++ b/dots/.config/hypr/hyprland/keybinds.lua
-@@ -25,7 +25,6 @@ hl.bind("SUPER + V", hl.dsp.global("quickshell:overviewClipboardToggle"))
+@@ -9,6 +9,36 @@ local hyprScripts = "$HOME/.config/hypr/hyprland/scripts"
+ local qsIpcCall = "qs -c $qsConfig ipc call"
+ local qsIsAlive = qsIpcCall .. " TEST_ALIVE"
+ 
++-- Tapping Super alone toggles search when Super is released. Since Hyprland
++-- 0.57 that release is reported even when another key was pressed while Super
++-- was held, so every Super+key combo also opened search. The shell has an
++-- "interrupt" shortcut for exactly this, so every bind that uses Super as a
++-- modifier gets a silent twin that calls it (the real action still runs).
++-- Wrapping hl.bind also covers binds added later (custom/keybinds.lua).
++do
++    local bind = hl.bind
++    local interrupt = hl.dsp.global("quickshell:searchToggleReleaseInterrupt")
++    hl.bind = function(keys, action, opts)
++        local result = bind(keys, action, opts)
++        if type(keys) == "string" then
++            local parts = {}
++            for part in keys:gmatch("[^+]+") do
++                table.insert(parts, (part:gsub("^%s+", ""):gsub("%s+$", "")))
++            end
++            local key = table.remove(parts)
++            local super = false
++            for _, mod in ipairs(parts) do
++                super = super or mod:upper() == "SUPER"
++            end
++            local is_super_key = key and key:upper():match("^SUPER_[LR]$")
++            if super and not is_super_key and not (opts and opts.release) then
++                bind(keys, interrupt, { non_consuming = true, locked = opts and opts.locked or nil })
++            end
++        end
++        return result
++    end
++end
++
+ hl.bind("SUPER + SUPER_L", hl.dsp.global("quickshell:searchToggleRelease"), { description = "Shell: Toggle search" })
+ hl.bind("SUPER + SUPER_R", hl.dsp.global("quickshell:searchToggleRelease"))
+ hl.bind("SUPER + SUPER_L", hl.dsp.exec_cmd(qsIsAlive .. " || pkill fuzzel || fuzzel"))
+@@ -25,7 +55,6 @@ hl.bind("SUPER + V", hl.dsp.global("quickshell:overviewClipboardToggle"))
  hl.bind("SUPER + Period", hl.dsp.global("quickshell:overviewEmojiToggle"))
  hl.bind("SUPER + A", hl.dsp.global("quickshell:sidebarLeftToggle"), { description = "Shell: Toggle left sidebar" })
  hl.bind("SUPER + ALT + A", hl.dsp.global("quickshell:sidebarLeftToggleDetach"))
@@ -757,7 +803,7 @@ index d54d25bd..857bf589 100644
  hl.bind("SUPER + O", hl.dsp.global("quickshell:sidebarLeftToggle"))
  hl.bind("SUPER + N", hl.dsp.global("quickshell:sidebarRightToggle"), { description = "Shell: Toggle right sidebar" })
  hl.bind("SUPER + Slash", hl.dsp.global("quickshell:cheatsheetToggle"), { description = "Shell: Toggle cheatsheet" })
-@@ -79,9 +78,8 @@ hl.bind("SUPER + SHIFT + X", hl.dsp.exec_cmd(
+@@ -79,9 +108,8 @@ hl.bind("SUPER + SHIFT + X", hl.dsp.exec_cmd(
      qsIsAlive ..
      " || pidof slurp || grim -g \"$(slurp $SLURP_ARGS)\" \"/tmp/ocr_image.png\" && tesseract \"/tmp/ocr_image.png\" stdout -l $(tesseract --list-langs | awk 'NR>1{print $1}' | tr '\\\\n' '+' | sed 's/\\\\+$/\\\\n/') | wl-copy && rm \"/tmp/ocr_image.png\""
  ))
@@ -769,7 +815,7 @@ index d54d25bd..857bf589 100644
  --# Recording stuff
  hl.bind("SUPER + SHIFT + R", hl.dsp.global("quickshell:regionRecord"),
      { locked = true, description = "Utilities: Record region (no sound)" })
-@@ -164,28 +162,48 @@ for i = 1, 2 do
+@@ -164,28 +192,48 @@ for i = 1, 2 do
      local focusdir = { "l", "r" }
      hl.bind("SUPER + " .. arrowkey[i], hl.dsp.focus({ direction = focusdir[i] }))
  end
@@ -823,7 +869,7 @@ index d54d25bd..857bf589 100644
  hl.bind("SUPER + ALT + Space", hl.dsp.window.float({ action = "toggle" }), { description = "Window: Float/Tile" })
  hl.bind("SUPER + D", hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" }),
      { description = "Window: Maximize" })
-@@ -195,11 +213,63 @@ hl.bind("SUPER + ALT + F", hl.dsp.window.fullscreen_state({ internal = 0, client
+@@ -195,11 +243,63 @@ hl.bind("SUPER + ALT + F", hl.dsp.window.fullscreen_state({ internal = 0, client
      { description = "Window: Fullscreen spoof" })
  hl.bind("SUPER + P", hl.dsp.window.pin(), { description = "Window: Pin" })
  
@@ -874,15 +920,15 @@ index d54d25bd..857bf589 100644
 +
 +--#/# bind = SUPER+SHIFT, <number>,, -- Move window to workspace -- (1, 2, 3,...)
 +-- The window is moved and the target workspace is focused
- for i = 1, 10 do
--    hl.bind("SUPER + ALT + " .. (i % 10), function()
++for i = 1, 10 do
 +    hl.bind("SUPER + SHIFT + " .. (i % 10), function()
 +        hl.dispatch(hl.dsp.window.move({ workspace = workspace_in_group(i), follow = true }))
 +    end, { description = "Window: Move to workspace " .. i })
 +end
 +--#/# bind = CTRL+SUPER, <number>,, -- Move window to workspace silently -- (1, 2, 3,...)
 +-- The window is moved without focusing the target workspace
-+for i = 1, 10 do
+ for i = 1, 10 do
+-    hl.bind("SUPER + ALT + " .. (i % 10), function()
 +    hl.bind("CTRL + SUPER + " .. (i % 10), function()
          hl.dispatch(hl.dsp.window.move({ workspace = workspace_in_group(i), follow = false }))
 -    end, { description = "Window: Send to workspace " .. i })
@@ -890,7 +936,7 @@ index d54d25bd..857bf589 100644
  end
  --# We also use raw keycodes because some keyboard layouts register number keys as different chars. The codes can be verified with `wev`
  -- for i = 1, 10 do
-@@ -245,23 +315,31 @@ hl.bind("CTRL + SUPER + S", hl.dsp.workspace.toggle_special("special"))
+@@ -245,23 +345,31 @@ hl.bind("CTRL + SUPER + S", hl.dsp.workspace.toggle_special("special"))
  --##! Workspace
  --# Switching
  --#/# bind = SUPER, Hash,, -- Focus workspace -- (1, 2, 3,...)
@@ -931,7 +977,7 @@ index d54d25bd..857bf589 100644
      end)
  end
  
-@@ -331,6 +409,22 @@ hl.bind("SUPER + ALT + F12",
+@@ -331,6 +439,22 @@ hl.bind("SUPER + ALT + F12",
  hl.bind("SUPER + ALT + Equal",
      hl.dsp.exec_cmd("notify-send 'Urgent notification' 'Ah hell no' -u critical -a 'Hyprland keybind'")) -- # [hidden]
  
@@ -954,7 +1000,7 @@ index d54d25bd..857bf589 100644
  --##! Session
  hl.bind("SUPER + L", hl.dsp.exec_cmd("loginctl lock-session"), { description = "Session: Lock" })
  hl.bind("SUPER + SHIFT + L", hl.dsp.exec_cmd("systemctl suspend || loginctl suspend"),
-@@ -347,7 +441,7 @@ hl.bind("SUPER + T", hl.dsp.exec_cmd(terminal))
+@@ -347,7 +471,7 @@ hl.bind("SUPER + T", hl.dsp.exec_cmd(terminal))
  hl.bind("CTRL + ALT + T", hl.dsp.exec_cmd(terminal))
  hl.bind("SUPER + E", hl.dsp.exec_cmd(fileManager), { description = "App: File manager" })
  hl.bind("SUPER + W", hl.dsp.exec_cmd(browser), { description = "App: Browser" })
@@ -963,7 +1009,7 @@ index d54d25bd..857bf589 100644
  hl.bind("CTRL + SUPER + SHIFT + ALT + W", hl.dsp.exec_cmd(officeSoftware), { description = "App: Office software" })
  hl.bind("SUPER + X", hl.dsp.exec_cmd(textEditor), { description = "App: Text editor" })
  hl.bind("CTRL + SUPER + V", hl.dsp.exec_cmd(volumeMixer), { description = "App: Volume mixer" })
-@@ -356,4 +450,6 @@ hl.bind("CTRL + SHIFT + Escape", hl.dsp.exec_cmd(taskManager), { description = "
+@@ -356,4 +480,6 @@ hl.bind("CTRL + SHIFT + Escape", hl.dsp.exec_cmd(taskManager), { description = "
  
  --# Cursed stuff
  --## Make window not amogus large

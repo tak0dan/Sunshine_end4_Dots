@@ -69,6 +69,11 @@ Options (after the command, e.g. `bash <(curl ...) --skip-packages`):
 | `Alt+Shift` (hold Alt) | — | switch keyboard layout everywhere |
 | `Ctrl+Super+Backslash` | resize to 640×480 (broken in the Lua config) | fixed |
 
+Tapping `Super` alone still opens search. Since Hyprland 0.57 the release of `Super` is reported
+even after another key was pressed with it, so in end-4's config every `Super` combination also
+opened search. Every bind that uses `Super` now also tells the shell it was a combination, so only
+a lone tap opens search.
+
 The top-row number keys are bound by key name only. end-4 also bound them by raw keycode, for
 layouts whose number row types other characters (AZERTY, for example). Both binds fired on one
 press, which broke the "back to the previous workspace" toggle, so the keycode set was removed.
@@ -180,8 +185,9 @@ Edit the live config, then:
 tools/build-patch.sh
 ```
 
-It rebuilds `patch/dots-hyprland.patch` from the files listed in `patch/files.txt`, swaps personal
-files for the examples in `tools/examples/`, and checks that the patch applies to a clean end-4
+It rebuilds `patch/dots-hyprland.patch` from the files listed in `patch/files.txt`, swaps in the
+files in `tools/examples/` (personal dates, and the published autostart in
+`hypr/hyprland/execs.lua`, so edit that copy for autostart changes), and checks that the patch applies to a clean end-4
 checkout and reproduces the live files.
 
 ## Uninstall
