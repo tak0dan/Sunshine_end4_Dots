@@ -129,7 +129,21 @@ else
     fail "icon themes not generated yet: pick a wallpaper (Ctrl+Super+T) and they will be"
 fi
 
-# 9. Spotify theming through spicetify (optional)
+# 9. Zen Browser as the system default browser (links, HTML files)
+zen=zen.desktop
+if [[ ! -f /usr/share/applications/$zen && ! -f ${XDG_DATA_HOME:-$HOME/.local/share}/applications/$zen ]]; then
+    fail "Zen Browser is not installed (zen-browser-bin from the AUR)"
+elif [[ $(xdg-settings get default-web-browser 2>/dev/null) == "$zen" ]]; then
+    pass "Zen Browser is the default browser"
+elif $check; then
+    fail "Zen Browser is not the default browser (now: $(xdg-settings get default-web-browser 2>/dev/null || echo none))"
+elif xdg-settings set default-web-browser "$zen" 2>/dev/null; then
+    fix "Zen Browser set as the default browser"
+else
+    fail "could not set Zen Browser as the default browser: xdg-settings set default-web-browser $zen"
+fi
+
+# 10. Spotify theming through spicetify (optional)
 if command -v spicetify &>/dev/null; then
     want=(current_theme Wallpaper color_scheme Wallpaper inject_css 1 inject_theme_js 1
           replace_colors 1 overwrite_assets 1)

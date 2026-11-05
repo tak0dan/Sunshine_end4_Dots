@@ -15,5 +15,6 @@ python-numpy       repo  required  # wallpaper theme generator (btop, Spotify, i
 python-pillow      repo  required  # wallpaper theme generator: reads the wallpaper
 lm_sensors         repo  optional  # temperatures in btop
 easyeffects        repo  optional  # end-4's execs.lua starts it but does not install it
+zen-browser-bin    aur   required  # default browser (links, HTML files, Super+W / Super+B, autostart)
 spotify            aur   optional  # music app, themed from the wallpaper with spicetify
 spicetify-cli      aur   optional  # applies the wallpaper theme to Spotify
