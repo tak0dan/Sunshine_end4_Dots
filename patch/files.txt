@@ -11,6 +11,7 @@ dots/.config/hypr/hyprland/execs.lua
 dots/.config/hypr/hyprland/general.lua
 dots/.config/hypr/hyprland/keybinds.lua
 dots/.config/hypr/hyprland/rules.lua
+dots/.config/hypr/hyprland/variables.lua
 dots/.config/hypr/scripts/KeyboardLayout.sh
 dots/.config/hypr/scripts/Tak0-Per-Window-Switch.py
 dots/.config/hypr/scripts/Tak0-Per-Window-Switch.sh
