@@ -95,8 +95,9 @@ On such layouts use the numpad, which is still bound.
   keyboard you type on. end-4's version took the last event from any device, virtual ones
   included, looked each name up with a separate process (dropping quick successive switches),
   and animated every change.
-- **Default browser** order: Zen Browser, Firefox, Brave, Chromium, then Google Chrome (end-4 tries
-  Chrome first). Used by the autostart and by `Super+W` / `Super+B`.
+- **Zen Browser is the default browser**: it is installed, set as the system default for links and
+  HTML files (`services.sh`), and first in Hyprland's browser list (Zen, Firefox, Brave, Chromium,
+  then Google Chrome; end-4 tries Chrome first), which the autostart and `Super+W` / `Super+B` use.
 - The active window border is the solid accent colour (end-4: a faint outline).
 
 ### Config files menu
@@ -168,6 +169,7 @@ They are stored in `~/.config/fastfetch/custom-info.json`.
 - `ydotool.service` (user) and `bluetooth.service`, which end-4's shell relies on
 - membership of the `video` and `input` groups
 - Python's numpy and pillow (theme generator) and `~/.local/bin` on PATH (cpmatrix)
+- Zen Browser as the system default browser
 - the generated btop theme and icon themes, and spicetify's settings if spicetify is installed
 
 ```bash
@@ -182,7 +184,8 @@ documented step, so it is left to you: `sudo chmod a+wr /opt/spotify -R && spice
 
 On top of end-4's dependencies (see [`packages.txt`](packages.txt)):
 
-- required: `foot`, `btop`, `fastfetch`, `socat`, `libnotify`, `python-numpy`, `python-pillow`
+- required: `foot`, `btop`, `fastfetch`, `socat`, `libnotify`, `python-numpy`, `python-pillow`, and
+  from the AUR `zen-browser-bin`
 - optional: `lm_sensors` (btop temperatures), `easyeffects` (end-4 starts it but does not install
   it), and from the AUR `spotify` and `spicetify-cli`
 
