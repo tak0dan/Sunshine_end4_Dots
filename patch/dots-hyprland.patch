@@ -3983,6 +3983,54 @@ index 00000000..2fb65d43
 +        return px[keep][:, :3], rows[keep]
 +    rows = np.repeat(np.linspace(0, 1, img.height), img.width)   # 0 = top of the screen
 +    return np.asarray(img.convert("RGB"), dtype=float).reshape(-1, 3) / 255, rows
+diff --git a/dots/.config/quickshell/ii/GlobalStates.qml b/dots/.config/quickshell/ii/GlobalStates.qml
+old mode 100644
+new mode 100755
+index bfb531e6..e8cbd471
+--- a/dots/.config/quickshell/ii/GlobalStates.qml
++++ b/dots/.config/quickshell/ii/GlobalStates.qml
+@@ -10,6 +10,7 @@ pragma ComponentBehavior: Bound
+ Singleton {
+     id: root
+     property bool barOpen: true
++    property bool configFilesOpen: false
+     property bool crosshairOpen: false
+     property bool sidebarLeftOpen: false
+     property bool sidebarRightOpen: false
+diff --git a/dots/.config/quickshell/ii/modules/ii/bar/BarContent.qml b/dots/.config/quickshell/ii/modules/ii/bar/BarContent.qml
+old mode 100644
+new mode 100755
+index 3bec7589..e2292679
+--- a/dots/.config/quickshell/ii/modules/ii/bar/BarContent.qml
++++ b/dots/.config/quickshell/ii/modules/ii/bar/BarContent.qml
+@@ -128,6 +128,27 @@ Item { // Bar content region
+             visible: Config.options?.bar.borderless
+         }
+ 
++        BarGroup { // Config files menu
++            id: configFilesGroup
++            anchors.verticalCenter: parent.verticalCenter
++
++            CircleUtilButton {
++                Layout.alignment: Qt.AlignVCenter
++                onClicked: GlobalStates.configFilesOpen = !GlobalStates.configFilesOpen
++                MaterialSymbol {
++                    horizontalAlignment: Qt.AlignHCenter
++                    fill: GlobalStates.configFilesOpen ? 1 : 0
++                    text: "description"
++                    iconSize: Appearance.font.pixelSize.large
++                    color: Appearance.colors.colOnLayer2
++                }
++            }
++        }
++
++        VerticalBarSeparator {
++            visible: Config.options?.bar.borderless
++        }
++
+         BarGroup {
+             id: middleCenterGroup
+             anchors.verticalCenter: parent.verticalCenter
 diff --git a/dots/.config/quickshell/ii/modules/ii/bar/HyprlandXkbIndicator.qml b/dots/.config/quickshell/ii/modules/ii/bar/HyprlandXkbIndicator.qml
 old mode 100644
 new mode 100755
@@ -3999,6 +4047,379 @@ index a6ca214a..25636a4c
          }
      }
  }
+diff --git a/dots/.config/quickshell/ii/modules/ii/configFiles/ConfigFiles.qml b/dots/.config/quickshell/ii/modules/ii/configFiles/ConfigFiles.qml
+new file mode 100644
+index 00000000..63d1a0b4
+--- /dev/null
++++ b/dots/.config/quickshell/ii/modules/ii/configFiles/ConfigFiles.qml
+@@ -0,0 +1,321 @@
++import qs
++import qs.services
++import qs.modules.common
++import qs.modules.common.widgets
++import QtQuick
++import QtQuick.Layouts
++import Quickshell
++import Quickshell.Io
++import Quickshell.Wayland
++import Quickshell.Hyprland
++
++/**
++ * Config files: every config file of this setup in one place.
++ * Click opens the file in the default text editor (the system's default app
++ * for text/plain), right-click opens its folder. Files that don't exist on
++ * this machine are hidden.
++ * Opened from the bar, the right sidebar, GlobalStates.configFilesOpen, the
++ * "configFilesToggle" global shortcut or `qs -c ii ipc call configFiles toggle`.
++ */
++Scope {
++    id: root
++    readonly property string home: Quickshell.env("HOME")
++
++    // Paths are relative to $HOME
++    readonly property var categories: [
++        {
++            "name": "Hyprland",
++            "icon": "desktop_windows",
++            "files": [
++                { "label": "Keybinds", "path": ".config/hypr/hyprland/keybinds.lua" },
++                { "label": "General (input, layouts, gaps)", "path": ".config/hypr/hyprland/general.lua" },
++                { "label": "Autostart", "path": ".config/hypr/hyprland/execs.lua" },
++                { "label": "Window rules", "path": ".config/hypr/hyprland/rules.lua" },
++                { "label": "Default apps", "path": ".config/hypr/hyprland/variables.lua" },
++                { "label": "Environment", "path": ".config/hypr/hyprland/env.lua" },
++                { "label": "Idle", "path": ".config/hypr/hypridle.conf" },
++                { "label": "Lock screen", "path": ".config/hypr/hyprlock.conf" },
++            ]
++        },
++        {
++            "name": "Your overrides",
++            "icon": "person",
++            "files": [
++                { "label": "Keybinds", "path": ".config/hypr/custom/keybinds.lua" },
++                { "label": "General", "path": ".config/hypr/custom/general.lua" },
++                { "label": "Autostart", "path": ".config/hypr/custom/execs.lua" },
++                { "label": "Window rules", "path": ".config/hypr/custom/rules.lua" },
++                { "label": "Default apps", "path": ".config/hypr/custom/variables.lua" },
++                { "label": "Environment", "path": ".config/hypr/custom/env.lua" },
++            ]
++        },
++        {
++            "name": "Shell & terminals",
++            "icon": "terminal",
++            "files": [
++                { "label": "fish", "path": ".config/fish/config.fish" },
++                { "label": "Prompt (starship)", "path": ".config/starship.toml" },
++                { "label": "foot", "path": ".config/foot/foot.ini" },
++                { "label": "kitty", "path": ".config/kitty/kitty.conf" },
++                { "label": "fastfetch", "path": ".config/fastfetch/config.jsonc" },
++                { "label": "Important dates", "path": ".config/fastfetch/custom-info.json" },
++            ]
++        },
++        {
++            "name": "Apps & theming",
++            "icon": "palette",
++            "files": [
++                { "label": "Shell settings", "path": ".config/illogical-impulse/config.json" },
++                { "label": "btop", "path": ".config/btop/btop.conf" },
++                { "label": "matugen", "path": ".config/matugen/config.toml" },
++                { "label": "Wallpaper theme generator", "path": ".config/matugen/templates/wallpaper-theme/wallpaper-theme.py" },
++                { "label": "Wallpaper theme design", "path": ".config/matugen/templates/wallpaper-theme/design.py" },
++                { "label": "Spotify styles", "path": ".config/matugen/templates/wallpaper-theme/spicetify/user.css" },
++                { "label": "KDE colours & icons", "path": ".config/kde-material-you-colors/config.conf" },
++            ]
++        },
++        {
++            "name": "Scripts & services",
++            "icon": "code",
++            "files": [
++                { "label": "Per-window layouts", "path": ".config/hypr/scripts/Tak0-Per-Window-Switch.py" },
++                { "label": "Global layout switch", "path": ".config/hypr/scripts/KeyboardLayout.sh" },
++                { "label": "Layouts service", "path": ".config/systemd/user/tak0-per-window-switch.service" },
++                { "label": "cpmatrix", "path": ".local/bin/cpmatrix" },
++            ]
++        },
++    ]
++    property var existing: ({})
++
++    function fullPath(path) {
++        return root.home + "/" + path;
++    }
++    function openFile(path) {
++        GlobalStates.configFilesOpen = false;
++        // The default app for plain text; xdg-open if there is none
++        Quickshell.execDetached(["sh", "-c",
++            'app=$(xdg-mime query default text/plain); app=${app%.desktop}; ' +
++            '[ -n "$app" ] && command -v gtk-launch >/dev/null && exec gtk-launch "$app" "$1"; exec xdg-open "$1"',
++            "sh", root.fullPath(path)]);
++    }
++    function openFolder(path) {
++        GlobalStates.configFilesOpen = false;
++        const full = root.fullPath(path);
++        Quickshell.execDetached(["xdg-open", full.substring(0, full.lastIndexOf("/"))]);
++    }
++
++    // Which files exist (checked each time the panel opens)
++    Process {
++        id: existsProc
++        command: ["sh", "-c", 'for f do [ -e "$f" ] && printf "%s\\n" "$f"; done', "sh"].concat(
++            root.categories.reduce((all, c) => all.concat(c.files.map(f => root.fullPath(f.path))), []))
++        stdout: StdioCollector {
++            onStreamFinished: {
++                const found = {};
++                for (const line of text.split("\n"))
++                    if (line)
++                        found[line] = true;
++                root.existing = found;
++            }
++        }
++    }
++    Connections {
++        target: GlobalStates
++        function onConfigFilesOpenChanged() {
++            if (GlobalStates.configFilesOpen)
++                existsProc.running = true;
++        }
++    }
++
++    Loader {
++        id: panelLoader
++        active: GlobalStates.configFilesOpen
++
++        sourceComponent: PanelWindow {
++            id: panelRoot
++            visible: panelLoader.active
++
++            anchors {
++                top: true
++                bottom: true
++                left: true
++                right: true
++            }
++
++            function hide() {
++                GlobalStates.configFilesOpen = false;
++            }
++            exclusiveZone: 0
++            WlrLayershell.namespace: "quickshell:configFiles"
++            color: "transparent"
++
++            mask: Region {
++                item: background
++            }
++
++            Component.onCompleted: GlobalFocusGrab.addDismissable(panelRoot)
++            Component.onDestruction: GlobalFocusGrab.removeDismissable(panelRoot)
++            Connections {
++                target: GlobalFocusGrab
++                function onDismissed() {
++                    panelRoot.hide();
++                }
++            }
++
++            StyledRectangularShadow {
++                target: background
++            }
++            Rectangle {
++                id: background
++                anchors.centerIn: parent
++                color: Appearance.colors.colLayer0
++                border.width: 1
++                border.color: Appearance.colors.colLayer0Border
++                radius: Appearance.rounding.windowRounding
++                property real padding: 20
++                implicitWidth: content.implicitWidth + padding * 2
++                implicitHeight: content.implicitHeight + padding * 2
++
++                Keys.onPressed: event => { // Esc to close
++                    if (event.key === Qt.Key_Escape)
++                        panelRoot.hide();
++                }
++
++                RippleButton { // Close button
++                    focus: panelRoot.visible
++                    implicitWidth: 40
++                    implicitHeight: 40
++                    buttonRadius: Appearance.rounding.full
++                    anchors {
++                        top: parent.top
++                        right: parent.right
++                        topMargin: 16
++                        rightMargin: 16
++                    }
++                    onClicked: panelRoot.hide()
++                    contentItem: MaterialSymbol {
++                        anchors.centerIn: parent
++                        horizontalAlignment: Text.AlignHCenter
++                        font.pixelSize: Appearance.font.pixelSize.title
++                        text: "close"
++                    }
++                }
++
++                ColumnLayout {
++                    id: content
++                    anchors.centerIn: parent
++                    spacing: 14
++
++                    ColumnLayout {
++                        spacing: 2
++                        StyledText {
++                            text: Translation.tr("Config files")
++                            font.pixelSize: Appearance.font.pixelSize.title
++                            color: Appearance.colors.colOnLayer0
++                        }
++                        StyledText {
++                            text: Translation.tr("Click to open in the text editor · Right-click to open the folder")
++                            font.pixelSize: Appearance.font.pixelSize.smaller
++                            color: Appearance.colors.colSubtext
++                        }
++                    }
++
++                    GridLayout {
++                        columns: 3
++                        columnSpacing: 18
++                        rowSpacing: 18
++
++                        Repeater {
++                            model: root.categories
++
++                            ColumnLayout {
++                                id: category
++                                required property var modelData
++                                Layout.alignment: Qt.AlignTop
++                                Layout.preferredWidth: 300
++                                spacing: 2
++                                visible: modelData.files.some(f => root.existing[root.fullPath(f.path)])
++
++                                RowLayout {
++                                    spacing: 6
++                                    Layout.bottomMargin: 4
++                                    MaterialSymbol {
++                                        text: category.modelData.icon
++                                        iconSize: Appearance.font.pixelSize.larger
++                                        color: Appearance.colors.colPrimary
++                                    }
++                                    StyledText {
++                                        text: category.modelData.name
++                                        font.pixelSize: Appearance.font.pixelSize.normal
++                                        color: Appearance.colors.colPrimary
++                                    }
++                                }
++
++                                Repeater {
++                                    model: category.modelData.files
++
++                                    RippleButton {
++                                        id: fileButton
++                                        required property var modelData
++                                        visible: root.existing[root.fullPath(modelData.path)] === true
++                                        Layout.fillWidth: true
++                                        implicitHeight: fileColumn.implicitHeight + 12
++                                        buttonRadius: Appearance.rounding.small
++                                        onClicked: root.openFile(modelData.path)
++                                        altAction: () => root.openFolder(modelData.path)
++
++                                        contentItem: ColumnLayout {
++                                            id: fileColumn
++                                            anchors {
++                                                left: parent.left
++                                                right: parent.right
++                                                verticalCenter: parent.verticalCenter
++                                                leftMargin: 10
++                                                rightMargin: 10
++                                            }
++                                            spacing: 0
++                                            StyledText {
++                                                Layout.fillWidth: true
++                                                text: fileButton.modelData.label
++                                                font.pixelSize: Appearance.font.pixelSize.small
++                                                color: Appearance.colors.colOnLayer0
++                                                elide: Text.ElideRight
++                                            }
++                                            StyledText {
++                                                Layout.fillWidth: true
++                                                text: "~/" + fileButton.modelData.path
++                                                font.pixelSize: Appearance.font.pixelSize.smallest
++                                                color: Appearance.colors.colSubtext
++                                                elide: Text.ElideMiddle
++                                            }
++                                        }
++                                    }
++                                }
++                            }
++                        }
++                    }
++                }
++            }
++        }
++    }
++
++    IpcHandler {
++        target: "configFiles"
++
++        function toggle(): void {
++            GlobalStates.configFilesOpen = !GlobalStates.configFilesOpen;
++        }
++        function open(): void {
++            GlobalStates.configFilesOpen = true;
++        }
++        function close(): void {
++            GlobalStates.configFilesOpen = false;
++        }
++    }
++
++    GlobalShortcut {
++        name: "configFilesToggle"
++        description: "Toggles the config files menu"
++        onPressed: GlobalStates.configFilesOpen = !GlobalStates.configFilesOpen
++    }
++}
+diff --git a/dots/.config/quickshell/ii/modules/ii/sidebarRight/SidebarRightContent.qml b/dots/.config/quickshell/ii/modules/ii/sidebarRight/SidebarRightContent.qml
+old mode 100644
+new mode 100755
+index 412912ed..5a44490f
+--- a/dots/.config/quickshell/ii/modules/ii/sidebarRight/SidebarRightContent.qml
++++ b/dots/.config/quickshell/ii/modules/ii/sidebarRight/SidebarRightContent.qml
+@@ -275,6 +275,17 @@ Item {
+                     text: Translation.tr("Reload Hyprland & Quickshell")
+                 }
+             }
++            QuickToggleButton {
++                toggled: false
++                buttonIcon: "description"
++                onClicked: {
++                    GlobalStates.sidebarRightOpen = false;
++                    GlobalStates.configFilesOpen = true;
++                }
++                StyledToolTip {
++                    text: Translation.tr("Config files")
++                }
++            }
+             QuickToggleButton {
+                 toggled: false
+                 buttonIcon: "settings"
+diff --git a/dots/.config/quickshell/ii/panelFamilies/IllogicalImpulseFamily.qml b/dots/.config/quickshell/ii/panelFamilies/IllogicalImpulseFamily.qml
+old mode 100644
+new mode 100755
+index 61a901fa..e8e826fb
+--- a/dots/.config/quickshell/ii/panelFamilies/IllogicalImpulseFamily.qml
++++ b/dots/.config/quickshell/ii/panelFamilies/IllogicalImpulseFamily.qml
+@@ -5,6 +5,7 @@ import qs.modules.common
+ import qs.modules.ii.background
+ import qs.modules.ii.bar
+ import qs.modules.ii.cheatsheet
++import qs.modules.ii.configFiles
+ import qs.modules.ii.dock
+ import qs.modules.ii.lock
+ import qs.modules.ii.mediaControls
+@@ -27,6 +28,7 @@ Scope {
+     PanelLoader { extraCondition: !Config.options.bar.vertical; component: Bar {} }
+     PanelLoader { component: Background {} }
+     PanelLoader { component: Cheatsheet {} }
++    PanelLoader { component: ConfigFiles {} }
+     PanelLoader { extraCondition: Config.options.dock.enable; component: Dock {} }
+     PanelLoader { component: Lock {} }
+     PanelLoader { component: MediaControls {} }
 diff --git a/dots/.config/quickshell/ii/scripts/colors/terminal/sequences.txt b/dots/.config/quickshell/ii/scripts/colors/terminal/sequences.txt
 index a677181e..9e38d5d1 100644
 --- a/dots/.config/quickshell/ii/scripts/colors/terminal/sequences.txt

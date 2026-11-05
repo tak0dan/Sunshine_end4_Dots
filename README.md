@@ -97,6 +97,15 @@ On such layouts use the numpad, which is still bound.
   and animated every change.
 - The active window border is the solid accent colour (end-4: a faint outline).
 
+### Config files menu
+
+A document button on the bar (between the media widget and the workspaces) and in the right
+sidebar (next to Settings) opens a list of every config file of this setup, grouped into Hyprland,
+your overrides, shell & terminals, apps & theming, and scripts & services. Click a file to open it
+in your default text editor (the system's default app for plain text); right-click to open its
+folder. Files that don't exist on your machine are hidden. Also available as
+`qs -c ii ipc call configFiles toggle` and as the global shortcut `quickshell:configFilesToggle`.
+
 ### Terminals and shell
 
 - **foot** (the default terminal): `Ctrl+C` interrupts (end-4: copy), copy is `Ctrl+Shift+C`,
