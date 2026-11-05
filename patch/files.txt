@@ -26,7 +26,12 @@ dots/.config/matugen/templates/wallpaper-theme/spicetify/theme.js
 dots/.config/matugen/templates/wallpaper-theme/spicetify/user.css
 dots/.config/matugen/templates/wallpaper-theme/wallpaper-theme.py
 dots/.config/matugen/templates/wallpaper-theme/wallpaper_view.py
+dots/.config/quickshell/ii/GlobalStates.qml
+dots/.config/quickshell/ii/modules/ii/bar/BarContent.qml
 dots/.config/quickshell/ii/modules/ii/bar/HyprlandXkbIndicator.qml
+dots/.config/quickshell/ii/modules/ii/configFiles/ConfigFiles.qml
+dots/.config/quickshell/ii/modules/ii/sidebarRight/SidebarRightContent.qml
+dots/.config/quickshell/ii/panelFamilies/IllogicalImpulseFamily.qml
 dots/.config/quickshell/ii/scripts/colors/terminal/sequences.txt
 dots/.config/quickshell/ii/services/HyprlandXkb.qml
 dots/.config/starship.toml
