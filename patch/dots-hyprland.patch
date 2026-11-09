@@ -3219,15 +3219,17 @@ index 00000000..60408b01
 +}
 diff --git a/dots/.config/matugen/templates/wallpaper-theme/spicetify/theme.js b/dots/.config/matugen/templates/wallpaper-theme/spicetify/theme.js
 new file mode 100644
-index 00000000..97507139
+index 00000000..8cdfda89
 --- /dev/null
 +++ b/dots/.config/matugen/templates/wallpaper-theme/spicetify/theme.js
-@@ -0,0 +1,49 @@
-+// Wallpaper theme, runtime part.
+@@ -0,0 +1,88 @@
++// Wallpaper theme, runtime part. Kept cheap on purpose: Spotify's own UI work
++// must not wait on this script.
 +(function wallpaperTheme() {
 +  // 1. Pick up new colours and styles without restarting Spotify:
 +  //    `spicetify refresh -n` rewrites colors.css and user.css after a
 +  //    wallpaper change; reload each stylesheet when its contents change.
++  //    Skipped while Spotify is not visible.
 +  const last = {};
 +  async function check(name) {
 +    const link = document.querySelector(`link[href*="${name}"]`);
@@ -3239,45 +3241,82 @@ index 00000000..97507139
 +      last[name] = css;
 +    } catch (e) { /* file mid-write; try again next round */ }
 +  }
-+  setInterval(() => { check("colors.css"); check("user.css"); }, 2000);
++  setInterval(() => {
++    if (document.hidden) return;
++    check("colors.css");
++    check("user.css");
++  }, 2000);
 +
 +  // 2. Headers tinted from album art (home, album, playlist, artist pages) get
 +  //    an inline background colour no stylesheet variable reaches, under a
 +  //    60% black overlay. Give them the wallpaper's header gradient instead:
 +  //    its most expressive colour fading into the page. Images and the right
 +  //    panel (cover, Canvas) are left alone.
-+  function neutralise() {
++  //
++  //    Only elements that were added or had their style changed are looked
++  //    at, and they are measured in one batch after a short pause. (Scanning
++  //    the whole page on every DOM change, and reacting to its own style
++  //    writes, made Spotify do this work on nearly every frame.)
++  const TOP = "var(--spice-gradient-top)";
++  const IMAGE = "linear-gradient(var(--spice-gradient-top), var(--spice-main))";
++
++  function candidate(el) {
++    const st = el.style;
++    if (!st || st.getPropertyValue("background-image") === IMAGE) return false;   // ours already
++    const bg = st.backgroundColor || st.background || "";
++    if (!/rgb|#/.test(bg)) return false;
++    return !/url\(/.test(st.backgroundImage || st.background || "");
++  }
++
++  const pending = new Set();
++  let timer = 0;
++  function flush() {
++    timer = 0;
 +    const view = document.querySelector(".Root__main-view");
-+    if (!view) return;
-+    const min = view.clientWidth * 0.4;
-+    for (const el of view.querySelectorAll('[style*="background-color"], [style*="background:"]')) {
-+      if (el.tagName === "IMG" || el.tagName === "VIDEO" || el.querySelector("img, video")) continue;
-+      const st = el.style;
-+      if (/url\(/.test(st.backgroundImage || st.background || "")) continue;
-+      if (!/rgb|#/.test(st.backgroundColor || st.background || "")) continue;
-+      const r = el.getBoundingClientRect();
-+      if (r.width < min || r.height < 120) continue;
-+      st.setProperty("background-color", "var(--spice-gradient-top)", "important");
-+      st.setProperty("background-image", "linear-gradient(var(--spice-gradient-top), var(--spice-main))", "important");
++    if (view) {
++      const min = view.clientWidth * 0.4;
++      for (const el of pending) {
++        if (!el.isConnected || !view.contains(el) || !candidate(el)) continue;
++        if (el.tagName === "IMG" || el.tagName === "VIDEO" || el.querySelector("img, video")) continue;
++        const r = el.getBoundingClientRect();
++        if (r.width < min || r.height < 120) continue;
++        el.style.setProperty("background-color", TOP, "important");
++        el.style.setProperty("background-image", IMAGE, "important");
++      }
++    }
++    pending.clear();
++  }
++  function queue(el) {
++    pending.add(el);
++    if (!timer) timer = setTimeout(flush, 150);
++  }
++  function scan(node) {
++    if (node.nodeType !== 1) return;
++    if (node.hasAttribute("style") && candidate(node)) queue(node);
++    for (const el of node.querySelectorAll('[style*="background"]')) {
++      if (candidate(el)) queue(el);
 +    }
 +  }
-+  let queued = false;
-+  const schedule = () => {
-+    if (queued) return;
-+    queued = true;
-+    requestAnimationFrame(() => { queued = false; neutralise(); });
-+  };
-+  new MutationObserver(schedule).observe(document.documentElement, {
++
++  new MutationObserver(records => {
++    for (const r of records) {
++      if (r.type === "attributes") {
++        if (candidate(r.target)) queue(r.target);
++      } else {
++        for (const node of r.addedNodes) scan(node);
++      }
++    }
++  }).observe(document.documentElement, {
 +    subtree: true, childList: true, attributes: true, attributeFilter: ["style"],
 +  });
-+  schedule();
++  scan(document.documentElement);
 +})();
 diff --git a/dots/.config/matugen/templates/wallpaper-theme/spicetify/user.css b/dots/.config/matugen/templates/wallpaper-theme/spicetify/user.css
 new file mode 100644
-index 00000000..f263159b
+index 00000000..7c9fd286
 --- /dev/null
 +++ b/dots/.config/matugen/templates/wallpaper-theme/spicetify/user.css
-@@ -0,0 +1,95 @@
+@@ -0,0 +1,99 @@
 +/* Wallpaper theme: colours come from color.ini, generated by
 +   ~/.config/matugen/templates/wallpaper-theme/wallpaper-theme.py.
 +   Map Spotify's own design tokens onto them so every surface follows. */
@@ -3306,11 +3345,13 @@ index 00000000..f263159b
 +}
 +
 +/* Spotify's green, wherever it is a token (including the per-album
-+   "extracted" variants) */
++   "extracted" variants). Only the theme and colour-set containers define
++   these tokens; matching every "encore-" element made each style
++   recalculation touch most of the UI. */
 +:root, .encore-dark-theme, .encore-light-theme,
 +.encore-dark-theme .encore-base-set, .encore-light-theme .encore-base-set,
 +.encore-dark-theme .encore-bright-accent-set, .encore-light-theme .encore-bright-accent-set,
-+[class*="encore-"] {
++[class*="encore-"][class*="-set"], [class*="encore-"][class*="-theme"] {
 +  --text-bright-accent: var(--spice-button) !important;
 +  --essential-bright-accent: var(--spice-button) !important;
 +  /* liked / added / downloaded: the secondary accent, so the palette's
@@ -3364,8 +3405,10 @@ index 00000000..f263159b
 +   A stylesheet !important beats a normal inline value, so the wallpaper
 +   palette wins. Large inline colour blocks (home and album headers) get the
 +   wallpaper header gradient from theme.js. The lyrics card keeps the cover's
-+   colours. */
-+* {
++   colours. Only :root and the elements that carry such an inline value
++   (custom properties are inherited, so a rule on every element gave each
++   element its own copy for nothing). */
++:root, [style*="--extracted"] {
 +  --extracted-background-color: var(--spice-main-elevated) !important;
 +  --extracted-background-tinted: rgba(var(--spice-rgb-text), 0.1) !important;
 +  --extracted-entity-color: var(--spice-main-elevated) !important;
